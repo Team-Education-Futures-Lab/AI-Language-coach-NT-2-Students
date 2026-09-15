@@ -1,0 +1,265 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 202 75% 97%;
+    --foreground: 197 36% 24%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 197 36% 24%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 197 36% 24%;
+
+    --primary: 173 58% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 202 60% 96%;
+    --secondary-foreground: 197 36% 24%;
+
+    --muted: 202 40% 94%;
+    --muted-foreground: 195 18% 48%;
+
+    --accent: 44 72% 70%;
+    --accent-foreground: 197 36% 20%;
+
+    --destructive: 11 76% 61%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 198 35% 90%;
+    --input: 202 60% 96%;
+    --ring: 173 58% 39%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 40 80% 99%;
+    --sidebar-foreground: 197 36% 28%;
+    --sidebar-primary: 27 87% 67%;
+    --sidebar-primary-foreground: 197 36% 12%;
+    --sidebar-accent: 44 72% 86%;
+    --sidebar-accent-foreground: 197 36% 28%;
+    --sidebar-border: 40 40% 90%;
+    --sidebar-ring: 44 72% 66%;
+
+    --chart-1: 173 58% 39%;
+    --chart-2: 44 72% 66%;
+    --chart-3: 27 87% 67%;
+    --chart-4: 11 76% 61%;
+    --chart-5: 197 36% 24%;
+  }
+
+  .dark {
+    --background: 197 40% 14%;
+    --foreground: 40 60% 96%;
+
+    --card: 197 40% 18%;
+    --card-foreground: 40 60% 98%;
+
+    --popover: 197 40% 18%;
+    --popover-foreground: 40 60% 98%;
+
+    --primary: 44 72% 66%;
+    --primary-foreground: 197 36% 18%;
+
+    --secondary: 197 30% 26%;
+    --secondary-foreground: 44 72% 95%;
+
+    --muted: 197 30% 24%;
+    --muted-foreground: 40 30% 78%;
+
+    --accent: 27 87% 67%;
+    --accent-foreground: 197 36% 12%;
+
+    --destructive: 11 76% 58%;
+    --destructive-foreground: 40 60% 98%;
+
+    --border: 197 30% 30%;
+    --input: 197 30% 30%;
+    --ring: 44 72% 66%;
+
+    --sidebar-background: 197 40% 16%;
+    --sidebar-foreground: 40 60% 96%;
+    --sidebar-primary: 44 72% 66%;
+    --sidebar-primary-foreground: 197 36% 12%;
+    --sidebar-accent: 197 30% 26%;
+    --sidebar-accent-foreground: 40 60% 96%;
+    --sidebar-border: 197 30% 28%;
+    --sidebar-ring: 44 72% 66%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply scroll-smooth;
+    overflow-x: clip;
+  }
+  body {
+    @apply text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: clip;
+    background-image:
+      radial-gradient(1200px 600px at 0% -10%, hsl(44 80% 92% / 0.60), transparent 55%),
+      radial-gradient(1200px 700px at 100% -10%, hsl(11 90% 92% / 0.45), transparent 55%),
+      radial-gradient(1400px 700px at 50% 120%, hsl(188 55% 92% / 0.9), transparent 60%);
+    background-attachment: fixed;
+    background-color: hsl(202 75% 97%);
+  }
+
+  ::selection {
+    @apply bg-cozy-sand/50 text-cozy-ink;
+  }
+}
+
+@layer components {
+  .cozy-grain {
+    background-image:
+      radial-gradient(hsl(44 72% 66% / 0.14) 1px, transparent 1.2px),
+      radial-gradient(hsl(27 87% 67% / 0.12) 1px, transparent 1.2px);
+    background-size: 22px 22px, 32px 32px;
+    background-position: 0 0, 11px 11px;
+  }
+
+  .tc-card {
+    @apply relative overflow-hidden rounded-3xl border border-[hsl(198_35%_90%)] bg-white shadow-tc-card;
+  }
+
+  .tc-card-sky {
+    @apply relative overflow-hidden rounded-3xl border border-[hsl(198_35%_90%)] bg-tc-sky-card shadow-tc-card;
+  }
+
+  .tc-navbar-pill {
+    @apply inline-flex items-center gap-1 rounded-full bg-[hsl(202_60%_96%)] px-3 py-2 text-sm font-semibold text-[hsl(197_36%_24%)] ring-1 ring-inset ring-[hsl(198_35%_90%)] transition-colors hover:bg-[hsl(202_60%_94%)];
+  }
+
+  .tc-sunset-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-tc-sunset-btn px-5 py-2.5 text-sm font-bold text-cozy-ink shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_8px_24px_-12px_hsl(11_76%_61%_/_0.45)] ring-1 ring-inset ring-white/60 transition-all hover:brightness-105 hover:-translate-y-[1px] active:translate-y-0;
+  }
+  .tc-sunset-btn-sm {
+    @apply tc-sunset-btn px-3.5 py-2 text-xs;
+  }
+  .tc-sunset-btn-lg {
+    @apply tc-sunset-btn px-8 py-3.5 text-base rounded-[1.25rem];
+  }
+
+  .tc-sand-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-cozy-sand/85 px-5 py-2.5 text-sm font-bold text-cozy-ink ring-1 ring-inset ring-cozy-sand shadow-[0_1px_0_hsl(0_0%_100%_/_0.7)_inset,0_6px_18px_-12px_hsl(44_72%_45%_/_0.35)] transition-all hover:bg-cozy-sand active:translate-y-[0.5px];
+  }
+  .tc-teal-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-[hsl(182_60%_92%)] px-5 py-2.5 text-sm font-bold text-cozy-teal ring-1 ring-inset ring-[hsl(173_58%_60%)] transition-all hover:bg-[hsl(182_60%_88%)] active:translate-y-[0.5px];
+  }
+  .tc-outline-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-cozy-ink ring-1 ring-inset ring-[hsl(198_35%_85%)] transition-all hover:bg-[hsl(202_60%_98%)];
+  }
+  .tc-ghost-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-cozy-ink/85 transition-colors hover:bg-[hsl(202_60%_95%)] hover:text-cozy-ink;
+  }
+
+  .tc-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold tracking-tight;
+  }
+  .tc-chip-ink {@apply tc-chip bg-cozy-ink/5 text-cozy-ink; background-color: hsl(197 36% 24% / 0.05); ring: 0; box-shadow: inset 0 0 0 1px hsl(197 36% 24% / 0.10);}
+  .tc-chip-sand {@apply tc-chip bg-cozy-sand/40 text-cozy-ink; background-color: hsl(44 72% 66% / 0.45); box-shadow: inset 0 0 0 1px hsl(44 72% 66% / 0.80);}
+  .tc-chip-sand-light {@apply tc-chip text-cozy-ink; background-color: hsl(44 72% 66% / 0.25); box-shadow: inset 0 0 0 1px hsl(44 72% 66% / 0.60);}
+  .tc-chip-teal {@apply tc-chip text-cozy-teal; background-color: hsl(173 58% 39% / 0.12); box-shadow: inset 0 0 0 1px hsl(173 58% 39% / 0.35);}
+  .tc-chip-teal-strong {@apply tc-chip bg-cozy-teal text-white; box-shadow: inset 0 0 0 1px hsl(0 0% 100% / 0.30);}
+  .tc-chip-orange {@apply tc-chip; background-color: hsl(27 87% 67% / 0.18); color: hsl(21 70% 40%); box-shadow: inset 0 0 0 1px hsl(27 87% 67% / 0.45);}
+  .tc-chip-terracotta {@apply tc-chip text-cozy-terracotta; background-color: hsl(11 76% 61% / 0.14); box-shadow: inset 0 0 0 1px hsl(11 76% 61% / 0.40);}
+  .tc-chip-sunset {@apply tc-chip text-cozy-ink; background-image: linear-gradient(135deg, hsl(11 76% 61% / 0.18), hsl(27 87% 67% / 0.28) 55%, hsl(44 72% 66% / 0.35)); box-shadow: inset 0 0 0 1px hsl(27 87% 67% / 0.50);}
+  .tc-chip-green {@apply tc-chip; background-color: hsl(150 40% 88%); color: hsl(155 50% 30%); box-shadow: inset 0 0 0 1px hsl(155 50% 65% / 0.5);}
+  .tc-chip-pink  {@apply tc-chip; background-color: hsl(350 70% 94%); color: hsl(350 55% 45%); box-shadow: inset 0 0 0 1px hsl(350 60% 80%);}
+
+  .tc-progress {
+    @apply relative h-2.5 w-full overflow-hidden rounded-full bg-[hsl(202_60%_92%)] ring-1 ring-inset ring-[hsl(198_35%_86%)];
+  }
+  .tc-progress > span {
+    @apply absolute inset-y-0 left-0 block rounded-full;
+    background-image: linear-gradient(90deg, hsl(173 58% 39%), hsl(44 72% 66%) 70%, hsl(27 87% 67%));
+  }
+  .tc-progress-terracotta > span {
+    background-image: linear-gradient(90deg, hsl(11 76% 61%), hsl(27 87% 67%) 70%, hsl(44 72% 66%));
+  }
+  .tc-progress-terracotta-soft > span {
+    background-image: linear-gradient(90deg, hsl(11 76% 61% / 0.75), hsl(27 87% 67%));
+  }
+  .tc-progress-teal > span {
+    background-image: linear-gradient(90deg, hsl(173 58% 39%), hsl(188 55% 60%));
+  }
+
+  .tc-section-label {
+    @apply inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-cozy-terracotta/85;
+  }
+
+  .tc-input {
+    @apply w-full rounded-2xl border border-[hsl(198_35%_88%)] bg-[hsl(202_60%_97%)] px-4 py-2.5 text-sm font-medium text-cozy-ink placeholder:text-cozy-ink/40 focus:outline-none focus:ring-2 focus:ring-cozy-teal/40 focus:ring-offset-2 focus:ring-offset-white;
+  }
+  .tc-input-light {
+    @apply tc-input bg-white;
+  }
+
+  .tc-field {
+    @apply space-y-1.5;
+  }
+  .tc-field > label {
+    @apply block text-xs font-bold text-cozy-ink/85;
+  }
+  .tc-field-help {
+    @apply mt-1 text-xs text-muted-foreground;
+  }
+
+  .tc-footer {
+    @apply mt-12 border-t border-[hsl(198_35%_90%)] bg-gradient-to-b from-white/60 to-[hsl(202_70%_94%)] px-4 py-5 sm:px-6 lg:px-10;
+  }
+
+  .heading-display {
+    @apply font-display tracking-tight;
+  }
+
+  .pixelated {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+
+  .tc-divider {
+    @apply my-6 h-px bg-gradient-to-r from-transparent via-[hsl(198_35%_86%)] to-transparent;
+  }
+
+  .tc-number-bubble {
+    @apply inline-grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black text-white shadow-tc-soft;
+  }
+
+  .tc-textarea {
+    @apply tc-input min-h-[90px] leading-relaxed;
+  }
+
+  .tc-select-trigger {
+    @apply tc-input-light inline-flex items-center justify-between;
+  }
+
+  .tc-step-card {
+    @apply tc-card p-5 sm:p-6;
+  }
+
+  .tc-mc {
+    @apply flex w-full items-start gap-3 rounded-2xl border border-[hsl(198_35%_88%)] bg-white p-4 text-left transition-all hover:bg-[hsl(202_60%_98%)];
+  }
+  .tc-mc-selected {
+    @apply border-cozy-teal/70 bg-[hsl(182_60%_94%)] ring-2 ring-cozy-teal/40 shadow-[0_0_0_4px_hsl(173_58%_39%_/_0.08)];
+  }
+  .tc-mc-correct {
+    @apply border-cozy-teal bg-[hsl(173_45%_94%)] ring-2 ring-cozy-teal/50;
+  }
+  .tc-mc-wrong {
+    @apply border-cozy-terracotta/50 bg-[hsl(11_60%_96%)] ring-2 ring-cozy-terracotta/30 line-through decoration-2 decoration-cozy-terracotta/40;
+  }
+}
+
+@layer utilities {
+  .tc-hidden-scrollbar::-webkit-scrollbar { display: none; }
+  .tc-hidden-scrollbar { scrollbar-width: none; }
+}

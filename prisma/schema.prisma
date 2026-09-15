@@ -1,0 +1,338 @@
+// Prisma schema voor NT2 AI Taalcoach Platform — MySQL variant
+// Alle modellen nodig voor Fase 1+ (schaalbaar)
+//
+// OPMERKING: MySQL heeft GEEN native PostgreSQL enum-ondersteuning zoals
+// PostgreSQL. In dit schema definiëren we daarom expliciet string-varianten
+// (@db.VarChar(..)) en laten we runtime validation over aan TypeScript/Zod
+// zodat dezelfde code op beide databases kan blijven werken.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// --- CONSTANTS (strings, mirror de echte enum-namen) ---
+// We behouden TypeScript enum-namen in de code; op de DB komt een VARCHAR
+// met een CHECK constraint (via Prisma validate of applicatielaag).
+
+// LanguageLevel: A1 | A2 | B1 | B2 | C1 | C2
+// ExerciseType: MULTIPLE_CHOICE | FILL_IN_BLANK | TRANSLATION | VOCABULARY | SENTENCE_CORRECTION | CONVERSATION
+// VocabularyStatus: NEW | LEARNING | REVIEWING | MASTERED
+// GoalType: XP | LESSONS | MINUTES | EXERCISES
+
+// --- USER & PROFILE ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?   @db.VarChar(255)
+  email         String    @unique(map: "user_email_unique") @db.VarChar(320)
+  emailVerified DateTime?
+  passwordHash  String?   @db.VarChar(255)
+  image         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile        Profile?
+  attempts       ExerciseAttempt[]
+  vocabulary     UserVocabulary[]
+  conversations  Conversation[]
+  progresses     Progress[]
+  dailyGoals     DailyGoal[]
+  streaks        Streak[]
+  achievements   UserAchievement[]
+  createdLessons Lesson[]
+
+  accounts      Account[]
+  sessions      Session[]
+  authenticator Authenticator[]
+}
+
+model Profile {
+  id             String   @id @default(cuid())
+  userId         String   @unique(map: "profile_user_id_unique")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  languageLevel  String   @default("A1") @db.VarChar(8)
+  nativeLanguage String?  @db.VarChar(128)
+  sector         String?  @db.VarChar(64)
+  uiLocale       String?  @db.VarChar(8)
+  interests      Json     @default("[]")
+  learningGoals  Json     @default("[]")
+  weakAreas      Json     @default("[]")
+  strongAreas    Json     @default("[]")
+  totalXp        Int      @default(0)
+  level          Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId], map: "profile_user_id_idx")
+  @@index([sector], map: "profile_sector_idx")
+}
+
+// --- LESSONS & EXERCISES ---
+
+model Lesson {
+  id            String   @id @default(cuid())
+  title         String   @db.VarChar(255)
+  description   String?  @db.Text
+  languageLevel String   @default("A1") @db.VarChar(8)
+  topic         String?  @db.VarChar(255)
+  category      String   @default("OTHER") @db.VarChar(64)
+  goals         Json     @default("[]")
+  order         Int      @default(0)
+  published     Boolean  @default(false)
+  coverImage    String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  createdById String? @db.VarChar(255)
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull, map: "lesson_created_by_user_fk")
+
+  exercises   Exercise[]
+  attempts    ExerciseAttempt[]
+  progresses  Progress[]
+
+  @@index([languageLevel], map: "lesson_language_level_idx")
+  @@index([category], map: "lesson_category_idx")
+  @@index([createdById], map: "lesson_created_by_id_idx")
+  @@index([published], map: "lesson_published_idx")
+}
+
+model Exercise {
+  id          String   @id @default(cuid())
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type        String   @db.VarChar(64)
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  difficulty  Int      @default(1)
+  content     Json
+  xpReward    Int      @default(10)
+  order       Int      @default(0)
+  hint        String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  attempts    ExerciseAttempt[]
+
+  @@index([lessonId], map: "exercise_lesson_id_idx")
+  @@index([lessonId, order], map: "exercise_lesson_order_idx")
+  @@index([type], map: "exercise_type_idx")
+}
+
+model ExerciseAttempt {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  lessonId   String?
+  lesson     Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  score      Int      @default(0)
+  correct    Boolean  @default(false)
+  mistakes   Json?
+  timeSpent  Int?
+  xpEarned   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([userId], map: "attempt_user_id_idx")
+  @@index([exerciseId], map: "attempt_exercise_id_idx")
+  @@index([createdAt], map: "attempt_created_at_idx")
+}
+
+// --- VOCABULARY ---
+
+model VocabularyWord {
+  id              String   @id @default(cuid())
+  dutchWord       String   @db.VarChar(255)
+  translation     String   @db.VarChar(255)
+  pronunciation   String?  @db.VarChar(255)
+  partOfSpeech    String?  @db.VarChar(64)
+  exampleSentence String?  @db.Text
+  languageLevel   String   @default("A1") @db.VarChar(8)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userWords       UserVocabulary[]
+
+  @@index([dutchWord], map: "vocab_dutch_word_idx")
+  @@index([languageLevel], map: "vocab_language_level_idx")
+}
+
+model UserVocabulary {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabularyId   String
+  vocabulary     VocabularyWord @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  status         String    @default("NEW") @db.VarChar(32)
+  correctCount   Int       @default(0)
+  incorrectCount Int       @default(0)
+  lastReviewedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, vocabularyId], map: "user_vocab_user_vocab_unique")
+  @@index([userId], map: "user_vocab_user_id_idx")
+  @@index([status], map: "user_vocab_status_idx")
+}
+
+// --- CONVERSATIONS (AI-chat) ---
+
+model Conversation {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String?  @db.VarChar(255)
+  languageLevel String   @default("A1") @db.VarChar(8)
+  context       Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  messages  ConversationMessage[]
+
+  @@index([userId], map: "conv_user_id_idx")
+}
+
+model ConversationMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String   @db.VarChar(32) // user | assistant | system
+  content        String   @db.Text
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId], map: "msg_conv_id_idx")
+  @@index([createdAt], map: "msg_created_at_idx")
+}
+
+// --- PROGRESS, GOALS & GAMIFICATION ---
+
+model Progress {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic        String   @db.VarChar(255)
+  lessonId     String?
+  lesson       Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  total        Int      @default(0)
+  completed    Int      @default(0)
+  accuracy     Float?
+  lastActiveAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, topic], map: "progress_user_topic_unique")
+  @@index([userId], map: "progress_user_id_idx")
+}
+
+model DailyGoal {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  goalType  String   @default("XP") @db.VarChar(32)
+  target    Int      @default(50)
+  current   Int      @default(0)
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date], map: "daily_goal_user_date_unique")
+  @@index([userId], map: "daily_goal_user_id_idx")
+}
+
+model Streak {
+  id             String   @id @default(cuid())
+  userId         String   @unique(map: "streak_user_id_unique")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  lastActiveAt   DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Achievement {
+  id          String  @id @default(cuid())
+  code        String  @unique(map: "achievement_code_unique") @db.VarChar(128)
+  name        String  @db.VarChar(255)
+  description String? @db.Text
+  icon        String? @db.VarChar(128)
+  requirement Json
+  xpReward    Int     @default(0)
+  createdAt   DateTime @default(now())
+
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId  String
+  achievement    Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt     DateTime @default(now())
+
+  @@unique([userId, achievementId], map: "user_achievement_unique")
+  @@index([userId], map: "user_achievement_user_id_idx")
+}
+
+// --- AUTH.JS (NextAuth v5) tables ---
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String  @db.VarChar(64)
+  provider          String  @db.VarChar(64)
+  providerAccountId String  @db.VarChar(255)
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String? @db.VarChar(64)
+  scope             String? @db.Text
+  id_token          String? @db.Text
+  session_state     String? @db.VarChar(255)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId], map: "account_provider_unique")
+  @@index([userId], map: "account_user_id_idx")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique(map: "session_token_unique")
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "session_user_id_idx")
+}
+
+model VerificationToken {
+  identifier String        @db.VarChar(255)
+  token      String        @unique(map: "v_token_unique") @db.VarChar(512)
+  expires    DateTime
+
+  @@unique([identifier, token], map: "v_token_identifier_token_unique")
+}
+
+model Authenticator {
+  credentialID         String  @unique(map: "auth_credential_id_unique") @db.VarChar(512)
+  userId               String
+  providerAccountId    String  @db.VarChar(255)
+  credentialPublicKey  String  @db.Text
+  counter              Int
+  credentialDeviceType String  @db.VarChar(64)
+  credentialBackedUp   Boolean
+  transports           String? @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, credentialID], map: "auth_user_credential_unique")
+}
