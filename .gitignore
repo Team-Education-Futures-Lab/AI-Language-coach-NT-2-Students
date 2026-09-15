@@ -25,6 +25,7 @@ yarn-error.log*
 .pnpm-debug.log*
 .dbg
 .trae
+.vscode
 
 # Local env files
 .env*.local
