@@ -7,6 +7,9 @@ import {
   RotateCcw,
   SendHorizonal,
   Square,
+  Sparkles,
+  Volume2,
+  VolumeX,
   Wand2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +35,65 @@ type Scenario = {
 };
 
 type CoachUiAction = "start-roleplay" | "start-capture" | "finish-session" | "reset-session";
+
+const PREMIUM_VOICE_HINTS = [
+  "siri",
+  "premium",
+  "enhanced",
+  "neural",
+  "natural",
+  "xander",
+  "claire",
+  "ellen",
+  "femke",
+  "google nederlands",
+  "microsoft hanne",
+];
+
+const AI_TTS_TIMEOUT_MS = 5000;
+const VOICE_MIN_SPEECH_MS = 250;
+const VOICE_SILENCE_MS = 550;
+const VOICE_MAX_TURN_MS = 10000;
+const VOICE_SILENCE_RMS_THRESHOLD = 0.02;
+
+function normalizeSpeechText(input: string) {
+  return input
+    .replace(/\s+/g, " ")
+    .replace(/\bNT2\b/g, "en tee twee")
+    .replace(/\bMBO\b/g, "em bee oo")
+    .replace(/->/g, " naar ")
+    .replace(/[“”]/g, "\"")
+    .replace(/[‘’]/g, "'")
+    .trim();
+}
+
+function splitIntoSpeechChunks(input: string) {
+  return normalizeSpeechText(input)
+    .split(/(?<=[.!?])\s+/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+function scoreVoice(voice: SpeechSynthesisVoice) {
+  const name = voice.name.toLowerCase();
+  const lang = voice.lang.toLowerCase();
+
+  let score = 0;
+  if (lang === "nl-nl") score += 90;
+  else if (lang.startsWith("nl")) score += 75;
+  if (voice.localService) score += 12;
+  if (voice.default) score += 8;
+
+  for (const hint of PREMIUM_VOICE_HINTS) {
+    if (name.includes(hint)) score += 18;
+  }
+
+  if (name.includes("compact")) score -= 10;
+  if (name.includes("eloquence")) score -= 25;
+
+  return score;
+}
 
 export function VoiceCoachSession() {
   const { locale } = useLocale();
@@ -77,13 +139,21 @@ export function VoiceCoachSession() {
         scenario: "Scenario",
         transcript: "Your answer",
         speech: "Voice input",
+        voiceOutput: "Coach voice",
         feedback: "Live coaching",
         review: "Session review",
         vocabulary: "Useful words",
+        selectedVoice: "Selected voice",
       },
       actions: {
         startMic: "Start mic",
         stopMic: "Stop mic",
+        autoListenOn: "Auto listen on",
+        autoListenOff: "Auto listen off",
+        replayCoach: "Replay coach",
+        stopCoach: "Stop voice",
+        autoSpeakOn: "Auto speak on",
+        autoSpeakOff: "Auto speak off",
         send: "Send turn",
         finish: "Finish session",
         reset: "Reset",
@@ -91,7 +161,14 @@ export function VoiceCoachSession() {
       notes: {
         speechReady: "Browser speech input is available.",
         speechMissing:
-          "Browser speech input is not available here yet. Type works already, and this panel is ready for a whisper.cpp bridge next.",
+          "Lokale voice capture is hier nog niet beschikbaar. Typen werkt al, en deze sessie is nu ingericht voor een faster-whisper runtime.",
+        autoListen:
+          "Handsfree mode listens for one turn, stops automatically after silence, and starts the next turn again after the coach reply.",
+        voiceReady: "AI voice output is ready, with browser voice as fallback.",
+        voiceMissing:
+          "Audio playback is not available here. The coach still replies in text.",
+        voiceQuality:
+          "De coach gebruikt nu de lokale voice runtime voor transcriptie en Piper-audio, met browserstem als fallback als dat nodig is.",
         ollamaFallback:
           "If Ollama is not available, the coach still returns a safe fallback so the flow keeps working.",
       },
@@ -108,15 +185,37 @@ export function VoiceCoachSession() {
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [browserVoiceSupported, setBrowserVoiceSupported] = useState(false);
   const [listening, setListening] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const [handsFreeMode, setHandsFreeMode] = useState(true);
+  const [selectedVoiceLabel, setSelectedVoiceLabel] = useState<string>("nl_NL-alex-medium (Piper)");
   const [error, setError] = useState<string | null>(null);
+  const [voicePhase, setVoicePhase] = useState<string | null>(null);
   const [turnData, setTurnData] = useState<CoachTurnResponse | null>(null);
   const [reviewData, setReviewData] = useState<CoachReviewResponse | null>(null);
   const [isTurnLoading, setIsTurnLoading] = useState(false);
   const [isReviewLoading, setIsReviewLoading] = useState(false);
-  const recognitionRef = useRef<any>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const silenceStartedAtRef = useRef<number | null>(null);
+  const captureStartedAtRef = useRef<number>(0);
+  const hasSpokenRef = useRef(false);
+  const animationFrameRef = useRef<number | null>(null);
+  const transcriptRef = useRef("");
+  const manualStopRef = useRef(false);
+  const pendingAutoListenRef = useRef(false);
 
   const selectedScenario =
     scenarios.find((scenario) => scenario.id === selectedId) ?? scenarios[0];
@@ -124,11 +223,13 @@ export function VoiceCoachSession() {
   function resetSession(nextScenarioId = selectedScenario.id) {
     const scenario =
       scenarios.find((item) => item.id === nextScenarioId) ?? scenarios[0];
+    stopSpeaking();
     setMessages([{ role: "assistant", content: scenario.starter }]);
     setDraft("");
     setTurnData(null);
     setReviewData(null);
     setError(null);
+    setVoicePhase(null);
   }
 
   useEffect(() => {
@@ -138,13 +239,315 @@ export function VoiceCoachSession() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const canUseBrowserVoice =
+      "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+
     setSpeechSupported(
-      "webkitSpeechRecognition" in window || "SpeechRecognition" in window,
+      typeof window.MediaRecorder !== "undefined" &&
+        typeof navigator !== "undefined" &&
+        !!navigator.mediaDevices?.getUserMedia,
     );
+    setVoiceSupported(typeof window.Audio !== "undefined" || canUseBrowserVoice);
+    setBrowserVoiceSupported(canUseBrowserVoice);
+
+    if ("speechSynthesis" in window) {
+      const loadVoices = () => {
+        voicesRef.current = window.speechSynthesis.getVoices();
+      };
+      loadVoices();
+      window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+
+      return () => {
+        stopListening(true);
+        window.speechSynthesis.cancel();
+        audioRef.current?.pause();
+        if (audioUrlRef.current) {
+          URL.revokeObjectURL(audioUrlRef.current);
+          audioUrlRef.current = null;
+        }
+        window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
+      };
+    }
+
     return () => {
-      recognitionRef.current?.stop?.();
+      stopListening(true);
+      audioRef.current?.pause();
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
     };
   }, []);
+
+  function stopSpeaking() {
+    pendingAutoListenRef.current = false;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeaking(false);
+  }
+
+  function cleanupListeningResources() {
+    if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    sourceNodeRef.current?.disconnect();
+    analyserRef.current?.disconnect();
+    sourceNodeRef.current = null;
+    analyserRef.current = null;
+
+    if (audioContextRef.current) {
+      void audioContextRef.current.close().catch(() => undefined);
+      audioContextRef.current = null;
+    }
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+  }
+
+  async function transcribeCapturedAudio(audioBlob: Blob) {
+    const formData = new FormData();
+    setVoicePhase("Ik zet je antwoord om naar tekst...");
+    formData.set("audio", audioBlob, "voice-turn.webm");
+    formData.set("language", locale.startsWith("nl") ? "nl" : locale);
+
+    const response = await fetch("/api/voice/transcribe", {
+      method: "POST",
+      body: formData,
+      cache: "no-store",
+    });
+    const raw = await response.text();
+    const json = raw ? JSON.parse(raw) : null;
+    if (!response.ok || !json?.ok || !json?.data?.text) {
+      throw new Error(json?.error ?? "Could not transcribe voice input.");
+    }
+
+    const transcript = String(json.data.text).trim();
+    if (!transcript) {
+      throw new Error("Er werd geen duidelijke spraak herkend.");
+    }
+
+    setDraft(transcript);
+    await submitTurn(transcript);
+  }
+
+  function speakWithBrowserVoice(text: string) {
+    if (
+      typeof window === "undefined" ||
+      !("speechSynthesis" in window) ||
+      !("SpeechSynthesisUtterance" in window)
+    ) {
+      return;
+    }
+
+    const content = text.trim();
+    if (!content) return;
+
+    window.speechSynthesis.cancel();
+
+    const speechChunks = splitIntoSpeechChunks(content);
+    const preferredVoice =
+      [...voicesRef.current].sort((a, b) => scoreVoice(b) - scoreVoice(a))[0] ??
+      voicesRef.current.find((voice) => voice.lang.toLowerCase().startsWith("nl")) ??
+      voicesRef.current.find((voice) => voice.default) ??
+      null;
+
+    if (preferredVoice) {
+      setSelectedVoiceLabel(`${preferredVoice.name} (${preferredVoice.lang}, browser fallback)`);
+    }
+
+    setVoicePhase("De coach spreekt...");
+    setSpeaking(true);
+
+    speechChunks.forEach((chunk, index) => {
+      const utterance = new SpeechSynthesisUtterance(chunk);
+      utterance.lang = preferredVoice?.lang ?? "nl-NL";
+      utterance.rate = 0.93;
+      utterance.pitch = 1.02;
+      utterance.volume = 1;
+
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+
+      utterance.onend = () => {
+        if (index === speechChunks.length - 1) {
+          setSpeaking(false);
+          setVoicePhase(null);
+            if (pendingAutoListenRef.current) {
+              pendingAutoListenRef.current = false;
+              window.setTimeout(() => {
+                startListening();
+              }, 250);
+            }
+        }
+      };
+      utterance.onerror = () => {
+        setSpeaking(false);
+        setVoicePhase(null);
+        setError("De coachstem kon niet worden afgespeeld.");
+          if (pendingAutoListenRef.current) {
+            pendingAutoListenRef.current = false;
+            window.setTimeout(() => {
+              startListening();
+            }, 250);
+          }
+      };
+
+      window.speechSynthesis.speak(utterance);
+    });
+  }
+
+  async function speakText(text: string) {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const content = text.trim();
+    if (!content) return;
+
+    if (typeof window.Audio === "undefined") {
+      if (browserVoiceSupported) {
+        speakWithBrowserVoice(content);
+        return;
+      }
+      setError("Deze browser ondersteunt geen audioweergave voor de coachstem.");
+      return;
+    }
+
+    stopSpeaking();
+    setError(null);
+    setVoicePhase("Ik maak de coachstem klaar...");
+
+    let timeoutId: number | null = null;
+
+    try {
+      const abortController = new AbortController();
+      timeoutId = window.setTimeout(() => {
+        abortController.abort();
+      }, AI_TTS_TIMEOUT_MS);
+
+      const response = await fetch("/api/voice/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        signal: abortController.signal,
+        body: JSON.stringify({
+          text: content,
+          locale,
+        }),
+      });
+      window.clearTimeout(timeoutId);
+      timeoutId = null;
+
+      if (!response.ok) {
+        const json = await response.json().catch(() => null);
+        throw new Error(json?.error ?? "Could not load AI voice.");
+      }
+
+      const audioBlob = await response.blob();
+      if (!audioBlob.size) {
+        throw new Error("Empty audio response.");
+      }
+
+      const nextAudioUrl = URL.createObjectURL(audioBlob);
+      const nextAudio = new Audio(nextAudioUrl);
+
+      audioUrlRef.current = nextAudioUrl;
+      audioRef.current = nextAudio;
+      setSelectedVoiceLabel(
+        `${response.headers.get("X-TTS-Voice-Label") ?? "Fenna Neural"} (AI)`,
+      );
+
+      nextAudio.onended = () => {
+        setSpeaking(false);
+        setVoicePhase(null);
+        if (audioUrlRef.current === nextAudioUrl) {
+          URL.revokeObjectURL(nextAudioUrl);
+          audioUrlRef.current = null;
+        }
+        if (audioRef.current === nextAudio) {
+          audioRef.current = null;
+        }
+        if (pendingAutoListenRef.current) {
+          pendingAutoListenRef.current = false;
+          window.setTimeout(() => {
+            startListening();
+          }, 250);
+        }
+      };
+
+      nextAudio.onerror = () => {
+        setSpeaking(false);
+        setVoicePhase(null);
+        if (audioUrlRef.current === nextAudioUrl) {
+          URL.revokeObjectURL(nextAudioUrl);
+          audioUrlRef.current = null;
+        }
+        if (audioRef.current === nextAudio) {
+          audioRef.current = null;
+        }
+        if (browserVoiceSupported) {
+          speakWithBrowserVoice(content);
+          return;
+        }
+        if (pendingAutoListenRef.current) {
+          pendingAutoListenRef.current = false;
+          window.setTimeout(() => {
+            startListening();
+          }, 250);
+        }
+        setError("De AI-stem kon niet worden afgespeeld.");
+      };
+
+      setSpeaking(true);
+      await nextAudio.play();
+    } catch (err) {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      stopSpeaking();
+      if (browserVoiceSupported) {
+        speakWithBrowserVoice(content);
+        if (err instanceof DOMException && err.name === "AbortError") {
+          setError("AI-stem was te traag, daarom is de browserstem gebruikt.");
+        }
+        return;
+      }
+      setSpeaking(false);
+      setVoicePhase(null);
+      setError(err instanceof Error ? err.message : "Could not load AI voice.");
+    }
+  }
+
+  function continueHandsFreeLoop() {
+    if (!handsFreeMode || listening || isTurnLoading || isReviewLoading) {
+      pendingAutoListenRef.current = false;
+      return;
+    }
+
+    if (autoSpeak && voiceSupported) {
+      pendingAutoListenRef.current = true;
+      return;
+    }
+
+    pendingAutoListenRef.current = false;
+    window.setTimeout(() => {
+      startListening();
+    }, 250);
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -168,24 +571,26 @@ export function VoiceCoachSession() {
       }
 
       if (action === "start-roleplay") {
+        stopSpeaking();
         textareaRef.current?.focus();
         if (speechSupported) {
           startListening();
         } else {
           setError(
-            "Je browser ondersteunt hier nog geen spraakinvoer. Typ je antwoord hieronder of gebruik straks de whisper.cpp stap.",
+            "Je browser ondersteunt hier nog geen lokale voice capture. Typ je antwoord hieronder of gebruik de voice runtime setup.",
           );
         }
         return;
       }
 
       if (action === "start-capture") {
+        stopSpeaking();
         if (speechSupported) {
           startListening();
         } else {
           textareaRef.current?.focus();
           setError(
-            "Je browser ondersteunt hier nog geen spraakinvoer. Typ je antwoord hieronder of gebruik straks de whisper.cpp stap.",
+              "Je browser ondersteunt hier nog geen lokale voice capture. Typ je antwoord hieronder of gebruik de voice runtime setup.",
           );
         }
       }
@@ -205,50 +610,164 @@ export function VoiceCoachSession() {
 
   function startListening() {
     if (typeof window === "undefined") return;
-    const RecognitionCtor =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    if (!RecognitionCtor) return;
+    if (listening || isTurnLoading || isReviewLoading) return;
+    if (
+      typeof window.MediaRecorder === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
+      setError("Je browser ondersteunt hier nog geen lokale voice capture.");
+      return;
+    }
 
-    recognitionRef.current?.stop?.();
-    const recognition = new RecognitionCtor();
-    recognition.lang = "nl-NL";
-    recognition.continuous = false;
-    recognition.interimResults = true;
+    stopSpeaking();
+    manualStopRef.current = false;
+    transcriptRef.current = "";
+    silenceStartedAtRef.current = null;
+    hasSpokenRef.current = false;
+    audioChunksRef.current = [];
+    setVoicePhase("Ik luister...");
 
-    recognition.onstart = () => {
-      setListening(true);
-      setError(null);
-    };
+    void (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+        mediaStreamRef.current = stream;
 
-    recognition.onresult = (event: any) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        transcript += event.results[i][0]?.transcript ?? "";
+        const mimeType = [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/mp4",
+        ].find((candidate) => window.MediaRecorder.isTypeSupported(candidate));
+        const mediaRecorder = new MediaRecorder(
+          stream,
+          mimeType ? { mimeType } : undefined,
+        );
+        mediaRecorderRef.current = mediaRecorder;
+
+        const audioContext = new AudioContext();
+        const sourceNode = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+        sourceNode.connect(analyser);
+        audioContextRef.current = audioContext;
+        sourceNodeRef.current = sourceNode;
+        analyserRef.current = analyser;
+        captureStartedAtRef.current = performance.now();
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onerror = () => {
+          cleanupListeningResources();
+          setListening(false);
+          setVoicePhase(null);
+          setError("Voice capture stopped unexpectedly.");
+        };
+
+        mediaRecorder.onstop = () => {
+          cleanupListeningResources();
+          setListening(false);
+          setVoicePhase("Ik zet je antwoord om naar tekst...");
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: mediaRecorder.mimeType || "audio/webm",
+          });
+          audioChunksRef.current = [];
+
+          if (manualStopRef.current || audioBlob.size === 0) {
+            return;
+          }
+
+          void transcribeCapturedAudio(audioBlob).catch((err) => {
+            setError(
+              err instanceof Error
+                ? err.message
+                : "Could not transcribe voice input.",
+            );
+          });
+        };
+
+        const sampleBuffer = new Uint8Array(analyser.frequencyBinCount);
+        const monitorSilence = () => {
+          if (!analyserRef.current || !mediaRecorderRef.current) return;
+          analyserRef.current.getByteTimeDomainData(sampleBuffer);
+
+          let sumSquares = 0;
+          for (const sample of sampleBuffer) {
+            const normalized = (sample - 128) / 128;
+            sumSquares += normalized * normalized;
+          }
+
+          const rms = Math.sqrt(sumSquares / sampleBuffer.length);
+          const now = performance.now();
+
+          if (rms > VOICE_SILENCE_RMS_THRESHOLD) {
+            hasSpokenRef.current = true;
+            silenceStartedAtRef.current = null;
+          } else if (
+            hasSpokenRef.current &&
+            now - captureStartedAtRef.current > VOICE_MIN_SPEECH_MS
+          ) {
+            if (silenceStartedAtRef.current === null) {
+              silenceStartedAtRef.current = now;
+            } else if (now - silenceStartedAtRef.current > VOICE_SILENCE_MS) {
+              stopListening(false);
+              return;
+            }
+          }
+
+          if (now - captureStartedAtRef.current > VOICE_MAX_TURN_MS) {
+            stopListening(false);
+            return;
+          }
+
+          animationFrameRef.current = window.requestAnimationFrame(monitorSilence);
+        };
+
+        mediaRecorder.start(150);
+        setListening(true);
+        setError(null);
+        animationFrameRef.current = window.requestAnimationFrame(monitorSilence);
+      } catch (err) {
+        cleanupListeningResources();
+        setListening(false);
+        setVoicePhase(null);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Microfoon kon niet worden gestart.",
+        );
       }
-      setDraft(transcript.trim());
-    };
-
-    recognition.onerror = () => {
-      setListening(false);
-      setError("Voice capture stopped unexpectedly.");
-    };
-
-    recognition.onend = () => {
-      setListening(false);
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
+    })();
   }
 
-  function stopListening() {
-    recognitionRef.current?.stop?.();
+  function stopListening(manual = true) {
+    manualStopRef.current = manual;
+    pendingAutoListenRef.current = false;
+    if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    const mediaRecorder = mediaRecorderRef.current;
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+      return;
+    }
+
+    cleanupListeningResources();
     setListening(false);
+    setVoicePhase(null);
   }
 
-  async function sendTurn() {
-    const userText = draft.trim();
+  async function submitTurn(userText: string) {
     if (!userText || isTurnLoading) return;
 
     const nextMessages: CoachMessage[] = [
@@ -261,6 +780,7 @@ export function VoiceCoachSession() {
     setError(null);
     setReviewData(null);
     setIsTurnLoading(true);
+    setVoicePhase("De coach denkt na...");
 
     try {
       const response = await fetch("/api/coach/session", {
@@ -278,25 +798,42 @@ export function VoiceCoachSession() {
           messages: nextMessages,
         }),
       });
-      const json = await response.json();
+      const raw = await response.text();
+      const json = raw ? JSON.parse(raw) : null;
       if (!response.ok || !json?.ok || !json?.data) {
         throw new Error(json?.error ?? "Could not send coach turn.");
       }
 
       const data = json.data as CoachTurnResponse;
       setTurnData(data);
+      const coachText = `${data.coachReply} ${data.nextQuestion}`.trim();
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `${data.coachReply} ${data.nextQuestion}`.trim(),
+          content: coachText,
         },
       ]);
+      if (autoSpeak && voiceSupported) {
+        void speakText(coachText);
+        continueHandsFreeLoop();
+      } else if (handsFreeMode) {
+        setVoicePhase(null);
+        continueHandsFreeLoop();
+      } else {
+        setVoicePhase(null);
+      }
     } catch (err) {
+      setVoicePhase(null);
       setError(err instanceof Error ? err.message : "Could not send coach turn.");
     } finally {
       setIsTurnLoading(false);
     }
+  }
+
+  async function sendTurn() {
+    const userText = draft.trim();
+    await submitTurn(userText);
   }
 
   async function finishSession() {
@@ -424,11 +961,88 @@ export function VoiceCoachSession() {
                   {ui.actions.startMic}
                 </Button>
               ) : (
-                <Button type="button" variant="outline" onClick={stopListening}>
+                <Button type="button" variant="outline" onClick={() => stopListening(true)}>
                   <Square className="h-4 w-4" />
                   {ui.actions.stopMic}
                 </Button>
               )}
+              <Button
+                type="button"
+                variant={handsFreeMode ? "sunset" : "outline"}
+                onClick={() => {
+                  setHandsFreeMode((current) => {
+                    const nextValue = !current;
+                    if (!nextValue) {
+                      pendingAutoListenRef.current = false;
+                    }
+                    return nextValue;
+                  });
+                }}
+                disabled={!speechSupported}
+              >
+                {handsFreeMode ? ui.actions.autoListenOn : ui.actions.autoListenOff}
+              </Button>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-cozy-ink/70">
+              {ui.notes.autoListen}
+            </p>
+              {voicePhase && (
+                <p className="mt-2 text-sm font-medium text-cozy-teal">
+                  {voicePhase}
+                </p>
+              )}
+          </div>
+
+          <div className="rounded-[1.4rem] border border-cozy-sand/35 bg-white/80 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-cozy-ink/45">
+                {ui.labels.voiceOutput}
+              </p>
+              <Badge variant={voiceSupported ? "success" : "warning"}>
+                {voiceSupported ? ui.notes.voiceReady : ui.notes.voiceMissing}
+              </Badge>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={autoSpeak ? "sunset" : "outline"}
+                onClick={() => setAutoSpeak((current) => !current)}
+                disabled={!voiceSupported}
+              >
+                {autoSpeak ? ui.actions.autoSpeakOn : ui.actions.autoSpeakOff}
+              </Button>
+              <Button
+                type="button"
+                variant="teal"
+                onClick={() => void speakText(messages.filter((item) => item.role === "assistant").at(-1)?.content ?? "")}
+                disabled={!voiceSupported || messages.filter((item) => item.role === "assistant").length === 0}
+              >
+                <Volume2 className="h-4 w-4" />
+                {ui.actions.replayCoach}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={stopSpeaking}
+                disabled={!voiceSupported || !speaking}
+              >
+                <VolumeX className="h-4 w-4" />
+                {ui.actions.stopCoach}
+              </Button>
+            </div>
+            <div className="mt-3 rounded-2xl bg-[hsl(202_60%_96%)] p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {ui.labels.selectedVoice}
+                </Badge>
+                <span className="text-sm font-semibold text-cozy-ink">
+                  {selectedVoiceLabel}
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-cozy-ink/70">
+                {ui.notes.voiceQuality}
+              </p>
             </div>
           </div>
 

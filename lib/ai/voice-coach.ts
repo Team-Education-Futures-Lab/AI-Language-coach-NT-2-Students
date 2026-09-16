@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { askMiraConverseJson } from "@/lib/ai/mira-converse";
 
 export const runtime = "nodejs";
 
@@ -135,6 +136,13 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+function buildRecentTranscript(messages: CoachMessage[], maxMessages = 6) {
+  return messages
+    .slice(-maxMessages)
+    .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+    .join("\n");
+}
+
 function normalizeSentence(input: string) {
   const trimmed = input.trim().replace(/\s+/g, " ");
   if (!trimmed) return "";
@@ -224,15 +232,18 @@ function fallbackReview(input: CoachReviewRequest): CoachReviewResponse {
 export async function generateCoachTurn(
   input: CoachTurnRequest,
 ): Promise<CoachTurnResponse> {
-  const transcript = input.messages
-    .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-    .join("\n");
+  const transcript = buildRecentTranscript(input.messages, 6);
+
+  const system = [
+    "You are TaalCozy Voice Coach for NT2 students in Dutch MBO education.",
+    "Be warm, short, practical, and keep the student talking.",
+    "Write all learner-facing content in simple Dutch.",
+  ].join("\n");
 
   const prompt = [
-    "You are TaalCozy Voice Coach for NT2 students in Dutch MBO education.",
     `Student level: ${input.level}. Sector: ${input.sector}.`,
     `Scenario: ${input.scenarioTitle}. Goal: ${input.scenarioGoal || "Keep the conversation practical."}`,
-    "Return only valid JSON with this exact shape:",
+    "Return valid JSON only:",
     JSON.stringify({
       coachReply: "string",
       betterSentence: "string",
@@ -241,20 +252,36 @@ export async function generateCoachTurn(
       nextQuestion: "string",
       vocabulary: [{ word: "string", meaning: "string" }],
     }),
-    "Rules:",
-    "- Write coachReply, betterSentence, tip, and nextQuestion in simple Dutch.",
-    "- Keep coachReply to 1 or 2 short sentences.",
-    "- Give only one main correction focus.",
-    "- betterSentence must improve the student's last message into natural Dutch.",
-    "- tip must be short and supportive.",
-    "- nextQuestion must continue the roleplay.",
-    "- vocabulary max 3 items, useful NT2 words from the student's last message or scenario.",
-    "Conversation so far:",
+    "Rules: simple Dutch, 1 main correction, short coachReply, short tip, continue roleplay, max 3 vocabulary items.",
+    "Recent conversation:",
     transcript,
     `Last student message: ${input.userText}`,
   ].join("\n");
 
   try {
+    const miraResult = await askMiraConverseJson({
+      system,
+      prompt,
+      temperature: 0.25,
+      maxTokens: 220,
+    });
+    if (miraResult) {
+      const candidate = asRecord(miraResult.parsed);
+      if (candidate) {
+        const parsed = CoachTurnResponseSchema.safeParse({
+          ...candidate,
+          meta: {
+            provider: miraResult.provider,
+            model: miraResult.model,
+            usedFallback: false,
+          },
+        });
+        if (parsed.success) {
+          return parsed.data;
+        }
+      }
+    }
+
     const result = await askOllamaJson(prompt);
     if (!result) return fallbackTurn(input);
     const candidate = asRecord(result.parsed);
@@ -277,12 +304,15 @@ export async function generateCoachTurn(
 export async function generateCoachReview(
   input: CoachReviewRequest,
 ): Promise<CoachReviewResponse> {
-  const transcript = input.messages
-    .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-    .join("\n");
+  const transcript = buildRecentTranscript(input.messages, 14);
+
+  const system = [
+    "You are TaalCozy Session Review for NT2 students in Dutch MBO education.",
+    "Use a practical MiraConverse-style coaching tone: concise, supportive, and actionable.",
+    "Write all learner-facing content in simple Dutch.",
+  ].join("\n");
 
   const prompt = [
-    "You are TaalCozy Session Review for NT2 students in Dutch MBO education.",
     `Student level: ${input.level}. Sector: ${input.sector}. Scenario: ${input.scenarioTitle}.`,
     "Return only valid JSON with this exact shape:",
     JSON.stringify({
@@ -304,6 +334,29 @@ export async function generateCoachReview(
   ].join("\n");
 
   try {
+    const miraResult = await askMiraConverseJson({
+      system,
+      prompt,
+      temperature: 0.3,
+      maxTokens: 320,
+    });
+    if (miraResult) {
+      const candidate = asRecord(miraResult.parsed);
+      if (candidate) {
+        const parsed = CoachReviewResponseSchema.safeParse({
+          ...candidate,
+          meta: {
+            provider: miraResult.provider,
+            model: miraResult.model,
+            usedFallback: false,
+          },
+        });
+        if (parsed.success) {
+          return parsed.data;
+        }
+      }
+    }
+
     const result = await askOllamaJson(prompt);
     if (!result) return fallbackReview(input);
     const candidate = asRecord(result.parsed);

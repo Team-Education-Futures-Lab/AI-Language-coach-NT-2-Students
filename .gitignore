@@ -41,3 +41,11 @@ next-env.d.ts
 # Prisma
 /prisma/*.db
 /prisma/*.db-journal
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local voice runtime assets
+/services/voice-runtime/voices/
