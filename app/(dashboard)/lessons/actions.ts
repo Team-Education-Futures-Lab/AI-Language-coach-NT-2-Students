@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db/prisma";
-import { getCurrentUser } from "@/auth";
+import { requireTeacher } from "@/auth";
 import {
   lessonCreateSchema,
   lessonUpdateSchema,
@@ -19,12 +19,23 @@ type ServerResult<T = unknown> =
   | { ok: true; data: T; message?: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
-async function getAuthUserIdOrThrow(): Promise<string> {
-  const user = await getCurrentUser();
-  if (!user?.id) {
-    throw new Error("Je moet ingelogd zijn om lessen te beheren.");
+async function getTeacherOrThrow() {
+  return requireTeacher();
+}
+
+function canManageLesson(
+  user: { id: string; role: string },
+  lesson: { createdById: string | null },
+) {
+  return user.role === "ADMIN" || lesson.createdById === user.id;
+}
+
+async function validateModuleAccess(user: { id: string; role: string }, moduleId?: string | null) {
+  if (!moduleId) return;
+  const lessonModule = await db.lessonModule.findUnique({ where: { id: moduleId } });
+  if (!lessonModule || (user.role !== "ADMIN" && lessonModule.createdById !== user.id)) {
+    throw new Error("Je mag geen lessen aan deze module toevoegen.");
   }
-  return user.id;
 }
 
 function safeStrip<T extends Record<string, unknown>>(
@@ -46,7 +57,7 @@ export async function createLessonAction(
   raw: Record<string, unknown>,
 ): Promise<ServerResult<{ id: string }>> {
   try {
-    const userId = await getAuthUserIdOrThrow();
+    const teacher = await getTeacherOrThrow();
     const parsed = lessonCreateSchema.safeParse(raw);
     if (!parsed.success) {
       return {
@@ -55,18 +66,20 @@ export async function createLessonAction(
         fieldErrors: parsed.error.flatten().fieldErrors as any,
       };
     }
+    await validateModuleAccess(teacher, parsed.data.moduleId);
     const stripped = safeStrip(parsed.data);
     const createData: any = {
       ...parsed.data,
       ...stripped,
       goals: Array.isArray(stripped.goals) && stripped.goals.length > 0 ? (stripped.goals as any) : [],
-      createdById: userId,
+        createdById: teacher.id,
     };
     const lesson = await db.lesson.create({
       data: createData,
       select: { id: true },
     });
     revalidatePath("/lessons");
+    revalidatePath("/lesson-builder");
     return {
       ok: true,
       data: { id: lesson.id },
@@ -85,7 +98,7 @@ export async function updateLessonAction(
   raw: Record<string, unknown>,
 ): Promise<ServerResult<void>> {
   try {
-    const userId = await getAuthUserIdOrThrow();
+    const user = await getTeacherOrThrow();
     const lessonParsed = lessonIdSchema.safeParse({ lessonId: lessonIdRaw });
     if (!lessonParsed.success) {
       return { ok: false, error: "Ongeldige les-id" };
@@ -104,13 +117,14 @@ export async function updateLessonAction(
       select: { id: true, createdById: true },
     });
     if (!existing) return { ok: false, error: "Les niet gevonden." };
-    if (existing.createdById && existing.createdById !== userId) {
+    if (!canManageLesson(user, existing)) {
       return {
         ok: false,
         error: "Je mag alleen je eigen lessen bewerken.",
       };
     }
 
+    await validateModuleAccess(user, parsed.data.moduleId);
     const data = safeStrip(parsed.data);
     await db.lesson.update({
       where: { id: lessonParsed.data.lessonId },
@@ -123,6 +137,8 @@ export async function updateLessonAction(
     revalidatePath(`/lessons/${lessonParsed.data.lessonId}`);
     revalidatePath(`/lessons/${lessonParsed.data.lessonId}/edit`);
     revalidatePath("/lessons");
+    revalidatePath("/lesson-builder");
+    revalidatePath("/dashboard");
     return { ok: true, data: undefined, message: "Les opgeslagen." };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? "Opslaan mislukt." };
@@ -133,7 +149,7 @@ export async function deleteLessonAction(
   lessonIdRaw: string,
 ): Promise<ServerResult<void>> {
   try {
-    const userId = await getAuthUserIdOrThrow();
+    const user = await getTeacherOrThrow();
     const lessonParsed = lessonIdSchema.safeParse({ lessonId: lessonIdRaw });
     if (!lessonParsed.success) {
       return { ok: false, error: "Ongeldige les-id" };
@@ -143,7 +159,7 @@ export async function deleteLessonAction(
       select: { createdById: true },
     });
     if (!existing) return { ok: false, error: "Les niet gevonden." };
-    if (existing.createdById && existing.createdById !== userId) {
+    if (!canManageLesson(user, existing)) {
       return {
         ok: false,
         error: "Je mag alleen je eigen lessen verwijderen.",
@@ -151,6 +167,7 @@ export async function deleteLessonAction(
     }
     await db.lesson.delete({ where: { id: lessonParsed.data.lessonId } });
     revalidatePath("/lessons");
+    revalidatePath("/lesson-builder");
     return { ok: true, data: undefined, message: "Les verwijderd." };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? "Verwijderen mislukt." };
@@ -167,7 +184,7 @@ export async function createExerciseAction(
   raw: Record<string, unknown>,
 ): Promise<ServerResult<{ id: string }>> {
   try {
-    const userId = await getAuthUserIdOrThrow();
+    const user = await getTeacherOrThrow();
     const lParsed = lessonIdSchema.safeParse({ lessonId: lessonIdRaw });
     if (!lParsed.success) return { ok: false, error: "Ongeldige les-id" };
     const parsed = exerciseEditorSchema.safeParse(raw);
@@ -183,7 +200,7 @@ export async function createExerciseAction(
       select: { createdById: true },
     });
     if (!existing) return { ok: false, error: "Les niet gevonden." };
-    if (existing.createdById && existing.createdById !== userId) {
+    if (!canManageLesson(user, existing)) {
       return { ok: false, error: "Je mag alleen je eigen lessen bewerken." };
     }
     const content = await exerciseContentSanitize(parsed.data.content);
@@ -214,7 +231,7 @@ export async function updateExerciseAction(
   raw: Record<string, unknown>,
 ): Promise<ServerResult<void>> {
   try {
-    const userId = await getAuthUserIdOrThrow();
+    const user = await getTeacherOrThrow();
     const ids = exerciseIdSchema.safeParse({
       lessonId: lessonIdRaw,
       exerciseId: exerciseIdRaw,
@@ -233,7 +250,7 @@ export async function updateExerciseAction(
       select: { createdById: true },
     });
     if (!existingLesson) return { ok: false, error: "Les niet gevonden." };
-    if (existingLesson.createdById && existingLesson.createdById !== userId) {
+    if (!canManageLesson(user, existingLesson)) {
       return { ok: false, error: "Alleen je eigen lessen bewerken." };
     }
     const existingExc = await db.exercise.findUnique({
@@ -270,7 +287,7 @@ export async function deleteExerciseAction(
   exerciseIdRaw: string,
 ): Promise<ServerResult<void>> {
   try {
-    const userId = await getAuthUserIdOrThrow();
+    const user = await getTeacherOrThrow();
     const ids = exerciseIdSchema.safeParse({
       lessonId: lessonIdRaw,
       exerciseId: exerciseIdRaw,
@@ -281,7 +298,7 @@ export async function deleteExerciseAction(
       select: { createdById: true },
     });
     if (!existingLesson) return { ok: false, error: "Les niet gevonden." };
-    if (existingLesson.createdById && existingLesson.createdById !== userId) {
+    if (!canManageLesson(user, existingLesson)) {
       return { ok: false, error: "Alleen je eigen lessen." };
     }
     const existingExc = await db.exercise.findUnique({
@@ -304,7 +321,7 @@ export async function reorderExercisesAction(
   orderedIds: string[],
 ): Promise<ServerResult<void>> {
   try {
-    const userId = await getAuthUserIdOrThrow();
+    const user = await getTeacherOrThrow();
     const parsed = exerciseReorderSchema.safeParse({
       lessonId: lessonIdRaw,
       orderedIds,
@@ -321,8 +338,14 @@ export async function reorderExercisesAction(
       select: { createdById: true },
     });
     if (!lesson) return { ok: false, error: "Les niet gevonden." };
-    if (lesson.createdById && lesson.createdById !== userId) {
+    if (!canManageLesson(user, lesson)) {
       return { ok: false, error: "Alleen je eigen lessen." };
+    }
+    const owned = await db.exercise.count({
+      where: { lessonId: parsed.data.lessonId, id: { in: parsed.data.orderedIds } },
+    });
+    if (owned !== parsed.data.orderedIds.length || new Set(parsed.data.orderedIds).size !== owned) {
+      return { ok: false, error: "Alle oefeningen moeten bij deze les horen." };
     }
     await db.$transaction(
       parsed.data.orderedIds.map((id, idx) =>
@@ -350,7 +373,7 @@ export async function aiGenerateExercisesAction(
   raw: Record<string, unknown>,
 ): Promise<ServerResult<{ count: number }>> {
   try {
-    const userId = await getAuthUserIdOrThrow();
+    const teacher = await getTeacherOrThrow();
     const parsed = aiGenerateExercisesSchema.safeParse(raw);
     if (!parsed.success) {
       return {
@@ -372,12 +395,12 @@ export async function aiGenerateExercisesAction(
       },
     });
     if (!lesson) return { ok: false, error: "Les niet gevonden." };
-    if (lesson.createdById && lesson.createdById !== userId) {
+    if (!canManageLesson(teacher, lesson)) {
       return { ok: false, error: "Alleen je eigen lessen." };
     }
 
-    const user = await db.profile.findUnique({
-      where: { userId },
+    const teacherProfile = await db.profile.findUnique({
+      where: { userId: teacher.id },
       select: { nativeLanguage: true },
     });
 
@@ -389,7 +412,7 @@ export async function aiGenerateExercisesAction(
       languageLevel: (lesson.languageLevel as any) || "A1",
       topic: parsed.data.topicOverride || lesson.topic || lesson.title,
       type: parsed.data.typeHint as any,
-      nativeLanguage: user?.nativeLanguage || undefined,
+      nativeLanguage: teacherProfile?.nativeLanguage || undefined,
       count: parsed.data.count,
     });
 

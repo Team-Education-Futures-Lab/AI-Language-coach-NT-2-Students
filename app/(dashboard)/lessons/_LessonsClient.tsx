@@ -384,7 +384,7 @@ export function LessonsClient() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <section className="tc-card p-5 sm:p-7 bg-gradient-to-br from-white via-[hsl(198_55%_98%)] to-[hsl(44_85%_97%)]">
+      <section className="tc-card p-5 sm:p-7 bg-black/40 border-white/10 backdrop-blur-2xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -412,18 +412,18 @@ export function LessonsClient() {
                 )}
               </span>
             </div>
-<h1 className="font-display text-2xl sm:text-3xl font-bold text-cozy-ink">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
               {showNlRef ? (
                 <Bilingual nl={nlSources.lessons.title} size="xl">{t.lessons.title}</Bilingual>
               ) : t.lessons.title}
             </h1>
-<div className="mt-1 text-sm font-semibold text-cozy-ink/65 max-w-[620px]">
+            <div className="mt-1 text-sm font-semibold text-white/60 max-w-[620px]">
               {showNlRef ? (
                 <Bilingual nl={nlSources.lessons.subtitle} size="sm">{t.lessons.subtitle}</Bilingual>
               ) : t.lessons.subtitle}
             </div>
           </div>
-<Link href="/lessons/new" className="tc-sunset-btn whitespace-nowrap">
+          <Link href="/lessons/new" className="tc-sunset-btn whitespace-nowrap">
             <Plus className="h-4 w-4" />
             {showNlRef ? (
               <Bilingual nl={nlSources.lessons.newLessonCta} size="md" variant="inline">{t.lessons.newLessonCta}</Bilingual>
@@ -433,14 +433,14 @@ export function LessonsClient() {
 
         {/* Search + filters */}
         <div className="mt-6 grid gap-3 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto] md:items-center">
-          <label className="tc-field flex items-center gap-2">
-            <Search className="h-4 w-4 text-cozy-ink/50" />
+          <label className="tc-field flex items-center gap-2 bg-black/40 border-white/10">
+            <Search className="h-4 w-4 text-white/50" />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t.common.search + "…"}
-              className="w-full bg-transparent outline-none text-sm font-semibold text-cozy-ink placeholder:text-cozy-ink/45"
+              className="w-full bg-transparent outline-none text-sm font-semibold text-white placeholder:text-white/40"
             />
           </label>
           <select
@@ -493,7 +493,7 @@ export function LessonsClient() {
 
         {/* Tabs + sort */}
         <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
-          <ul className="flex flex-wrap items-center gap-1 rounded-full bg-[hsl(202_60%_96%)] p-1 ring-1 ring-inset ring-[hsl(198_35%_90%)] shadow-tc-soft">
+          <ul className="flex flex-wrap items-center gap-1 rounded-full bg-black/40 p-1 ring-1 ring-inset ring-white/10 shadow-lg backdrop-blur-md">
             {tabs.map((tabObj) => {
               const active = tab === tabObj.key;
               return (
@@ -504,14 +504,14 @@ export function LessonsClient() {
                     className={cn(
                       "relative inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-bold transition-all",
                       active
-                        ? "bg-white text-cozy-terracotta ring-1 ring-[hsl(11_76%_72%)] shadow-tc-soft"
-                        : "text-cozy-ink/80 hover:bg-white/70 hover:text-cozy-ink",
+                        ? "bg-white/10 text-white ring-1 ring-white/20 shadow-lg"
+                        : "text-white/60 hover:bg-white/5 hover:text-white",
                     )}
                   >
                     <span className="relative flex items-center gap-2">
                       <span>{tabObj.label(TABS.counts[tabObj.key])}</span>
                       {tabObj.badge && (
-                        <span className="rounded-full bg-cozy-sand/90 px-2 py-0.5 text-[10px] font-black text-cozy-ink ring-1 ring-inset ring-white/60">
+                        <span className="rounded-full bg-fuchsia-500/20 px-2 py-0.5 text-[10px] font-black text-fuchsia-200 ring-1 ring-inset ring-fuchsia-500/30">
                           {tabObj.badge}
                         </span>
                       )}
@@ -522,10 +522,10 @@ export function LessonsClient() {
             })}
           </ul>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-cozy-ink/60">
+            <span className="text-xs font-bold text-white/60">
               {t.lessons.sortBy}:
             </span>
-<button type="button" className="tc-chip tc-chip-ink !px-3">
+            <button type="button" className="tc-chip bg-white/10 text-white border-white/20 hover:bg-white/20 !px-3">
               <SortAsc className="h-3.5 w-3.5" />
               {showNlRef ? (
                   <Bilingual nl="Meest recent" size="sm" variant="inline">{translatedUi.mostRecent}</Bilingual>
@@ -540,13 +540,13 @@ export function LessonsClient() {
         <div>
           {shown.length === 0 ? (
             <div className="tc-card p-10 text-center">
-              <LayoutGrid className="mx-auto h-10 w-10 text-cozy-ink/50" />
-              <h3 className="mt-2 font-display text-xl font-bold text-cozy-ink">
+              <LayoutGrid className="mx-auto h-10 w-10 text-white/50" />
+              <h3 className="mt-2 font-display text-xl font-bold text-white">
                 {showNlRef ? (
                   <Bilingual nl="Geen resultaten" size="lg">{translatedUi.noResults}</Bilingual>
                 ) : translatedUi.noResults}
               </h3>
-              <div className="mt-1 text-sm font-semibold text-cozy-ink/60">
+              <div className="mt-1 text-sm font-semibold text-white/60">
                 {showNlRef ? (
                   <Bilingual nl="Pas je filters aan of wis je zoekopdracht." size="sm">
                     {translatedUi.noResultsHint}
@@ -569,12 +569,12 @@ export function LessonsClient() {
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-                      <span className="tc-chip-sand-strong !px-2.5 !py-1 text-[10px]">
+                      <span className="tc-chip-sand-strong bg-white/10 text-white border-white/20 backdrop-blur-md !px-2.5 !py-1 text-[10px]">
                         {l.sectorChip}
                       </span>
-                      <span className="tc-chip-teal-strong !px-2.5 !py-1 text-[10px]">
+                      <span className="tc-chip-teal-strong bg-white/10 text-white border-white/20 backdrop-blur-md !px-2.5 !py-1 text-[10px]">
                         {l.erkChip}
                       </span>
                     </div>
@@ -583,10 +583,10 @@ export function LessonsClient() {
                         type="button"
                         aria-label={locale === "nl" ? "Favoriet" : "Favorite"}
                         className={cn(
-                          "grid h-8 w-8 place-items-center rounded-full shadow-tc-soft transition-colors",
+                          "grid h-8 w-8 place-items-center rounded-full shadow-tc-soft transition-colors backdrop-blur-md",
                           l.favorite
-                            ? "bg-cozy-terracotta text-white"
-                            : "bg-white/90 text-cozy-ink hover:text-cozy-terracotta",
+                            ? "bg-fuchsia-500/20 text-fuchsia-400"
+                            : "bg-black/40 text-white hover:bg-fuchsia-500/20 hover:text-fuchsia-400",
                         )}
                       >
                         <Heart
@@ -599,30 +599,30 @@ export function LessonsClient() {
                     </div>
                     <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="rounded-lg bg-white/95 px-2 py-1 text-[11px] font-black text-cozy-ink shadow-tc-soft ring-1 ring-inset ring-white/60">
-                          <Clock className="inline h-3 w-3 align-text-bottom" />{" "}
+                        <span className="rounded-lg bg-black/40 px-2 py-1 text-[11px] font-black text-white shadow-tc-soft ring-1 ring-inset ring-white/20 backdrop-blur-md">
+                          <Clock className="inline h-3 w-3 align-text-bottom text-fuchsia-400" />{" "}
                           {l.minutes} {t.common.minutesShort}
                         </span>
-                        <span className="rounded-lg bg-white/95 px-2 py-1 text-[11px] font-black text-cozy-ink shadow-tc-soft ring-1 ring-inset ring-white/60">
-                          <Sparkles className="inline h-3 w-3 align-text-bottom" />{" "}
+                        <span className="rounded-lg bg-black/40 px-2 py-1 text-[11px] font-black text-white shadow-tc-soft ring-1 ring-inset ring-white/20 backdrop-blur-md">
+                          <Sparkles className="inline h-3 w-3 align-text-bottom text-emerald-400" />{" "}
                           +{l.xp} {t.common.xpLabel}
                         </span>
                       </div>
-                      <span className="rounded-lg bg-black/55 px-2 py-1 text-[11px] font-black text-white shadow-tc-soft ring-1 ring-inset ring-white/30">
+                      <span className="rounded-lg bg-black/40 px-2 py-1 text-[11px] font-black text-white shadow-tc-soft ring-1 ring-inset ring-white/20 backdrop-blur-md">
                         {l.exercises} {t.common.exercisesShort}
                       </span>
                     </div>
                   </div>
                   <div className="flex flex-1 flex-col gap-3 p-4">
-                    <h3 className="font-display text-lg font-bold leading-snug text-cozy-ink line-clamp-2">
+                    <h3 className="font-display text-lg font-bold leading-snug text-white line-clamp-2">
                       {l.title}
                     </h3>
-                    <p className="text-sm font-semibold text-cozy-ink/65 line-clamp-2 min-h-[42px]">
+                    <p className="text-sm font-semibold text-white/70 line-clamp-2 min-h-[42px]">
                       {l.description}
                     </p>
                     <div className="mt-auto space-y-2">
                       <ProgressBar value={l.progress} color={l.progressColor} />
-                      <div className="flex items-center justify-between text-[11px] font-bold text-cozy-ink/60">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-white/60">
 <span>
                           {showNlRef ? (
                             <Bilingual nl={`Voortgang ${l.progress}%`} size="sm" variant="inline">
@@ -631,7 +631,7 @@ export function LessonsClient() {
                           ) : translatedUi.progress.replace("{progress}", String(l.progress))}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <Star className="h-3.5 w-3.5 text-cozy-orange" />
+                          <Star className="h-3.5 w-3.5 text-fuchsia-400" />
                           +{l.xp} {showNlRef ? (
                             <Bilingual nl="XP" size="sm" variant="inline">XP</Bilingual>
                           ) : "XP"}
@@ -639,11 +639,11 @@ export function LessonsClient() {
                       </div>
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="tc-chip tc-chip-sand-light">
+                      <span className="tc-chip bg-white/10 text-white border-white/20">
                         <Tag className="h-3.5 w-3.5" />
                         {l.erkChip}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-sm font-black text-cozy-terracotta transition-transform group-hover:translate-x-0.5">
+                      <span className="inline-flex items-center gap-1 text-sm font-black text-fuchsia-400 transition-transform group-hover:translate-x-0.5">
                         {l.progress > 0 ? (
                           showNlRef ? (
                             <Bilingual nl="Hervatten" size="sm" variant="inline">{translatedUi.resume}</Bilingual>
@@ -659,14 +659,14 @@ export function LessonsClient() {
               ))}
 
               {/* 4e kolom (md/xl): Concept card placeholder */}
-              <article className="tc-card p-5 flex flex-col justify-between bg-[hsl(198_55%_98%)] border-dashed border-cozy-orange/60">
+              <article className="tc-card p-5 flex flex-col justify-between bg-black/40 border-dashed border-white/20">
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="tc-chip-sunset">
+                    <span className="tc-chip-sunset bg-amber-500/20 text-amber-100 border-amber-500/30">
                       <Lightbulb className="h-3.5 w-3.5" />
                       {t.lessons.conceptBadge}
                     </span>
-                    <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-black text-cozy-ink ring-1 ring-inset ring-[hsl(198_35%_88%)]">
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black text-white ring-1 ring-inset ring-white/20">
 {showNlRef ? (
                         <Bilingual nl="2 concepten" size="sm" variant="inline">
                           {translatedUi.draftsCount}
@@ -674,19 +674,19 @@ export function LessonsClient() {
                       ) : translatedUi.draftsCount}
                     </span>
                   </div>
-                  <div className="mt-4 grid h-28 place-items-center rounded-2xl border border-dashed border-cozy-sand bg-white/60">
-                    <LayoutGrid className="h-10 w-10 text-cozy-ink/35" />
+                  <div className="mt-4 grid h-28 place-items-center rounded-2xl border border-dashed border-white/20 bg-white/5">
+                    <LayoutGrid className="h-10 w-10 text-white/30" />
                   </div>
-                  <h3 className="mt-4 font-display text-lg font-bold text-cozy-ink">
+                  <h3 className="mt-4 font-display text-lg font-bold text-white">
                     {t.lessons.conceptCardTitle}
                   </h3>
-                  <p className="mt-1 text-sm font-semibold text-cozy-ink/65">
+                  <p className="mt-1 text-sm font-semibold text-white/70">
                     {t.lessons.conceptCardSubtitle}
                   </p>
                 </div>
                 <Link
                   href="/lessons/new"
-                  className="mt-5 tc-outline-btn w-full justify-center"
+                  className="mt-5 tc-outline-btn w-full justify-center border-white/20 text-white hover:bg-white/10"
                 >
                   <Plus className="h-4 w-4" />
                   {t.lessons.conceptCardCta}
@@ -697,7 +697,7 @@ export function LessonsClient() {
 
           {/* Load more */}
           <div className="mt-6 flex justify-center">
-            <button type="button" className="tc-outline-btn !px-6">
+            <button type="button" className="tc-outline-btn !px-6 border-white/20 text-white hover:bg-white/10">
               {t.lessons.loadMore}
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -714,19 +714,19 @@ export function LessonsClient() {
                 className="h-full w-full object-cover"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-cozy-terracotta/35 via-cozy-orange/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/40 via-fuchsia-500/20 to-transparent" />
               <div className="absolute left-4 top-4 flex items-center gap-1">
-                <span className="tc-chip-sunset">
-                  <Flame className="h-3.5 w-3.5" />
+                <span className="tc-chip-sunset bg-white/10 text-white border-white/20 backdrop-blur-md">
+                  <Flame className="h-3.5 w-3.5 text-fuchsia-400" />
                   {t.lessons.recommendedPath}
                 </span>
               </div>
             </div>
             <div className="p-5">
-              <h3 className="font-display text-xl font-bold text-cozy-ink">
+              <h3 className="font-display text-xl font-bold text-white">
                 {t.lessons.recommendedPathTitle}
               </h3>
-              <p className="mt-1 text-sm font-semibold text-cozy-ink/65">
+              <p className="mt-1 text-sm font-semibold text-white/70">
                 {t.lessons.recommendedPathSubtitle}
               </p>
               <ul className="mt-4 space-y-2">
@@ -737,7 +737,7 @@ export function LessonsClient() {
                   { p: 0,   label: translatedUi.recommendedStep4, c: "sand" },
                 ].map((s, i) => (
                   <li key={i}>
-                    <div className="flex items-center justify-between text-xs font-bold text-cozy-ink/80 mb-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold text-white/80 mb-1.5">
                       <span className="truncate">{s.label}</span>
                       <span>{s.p}%</span>
                     </div>
@@ -748,7 +748,7 @@ export function LessonsClient() {
                   </li>
                 ))}
               </ul>
-              <Link href="/lessons" className="mt-5 tc-sunset-btn w-full">
+              <Link href="/lessons" className="mt-5 tc-sunset-btn w-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:brightness-110">
                 <FireIcon className="h-4 w-4" />
                 {t.lessons.recommendedPathCta}
                 <ArrowRight className="h-4 w-4" />

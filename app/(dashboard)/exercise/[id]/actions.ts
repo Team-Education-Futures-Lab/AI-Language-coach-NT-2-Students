@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db/prisma";
 import { getCurrentUser } from "@/auth";
+import { canReadLesson } from "@/lib/auth/lesson-access";
 import {
   MultipleChoiceContentSchema,
   FillInBlankContentSchema,
@@ -80,7 +81,7 @@ export async function submitExerciseAction(
     where: { id: exerciseId },
     include: { lesson: true },
   });
-  if (!raw) {
+  if (!raw || !canReadLesson(user, raw.lesson)) {
     return {
       ok: false,
       correct: false,

@@ -14,7 +14,10 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "users:promote": "tsx scripts/promote-user.ts",
+    "lessons:worker": "tsx scripts/lesson-worker.ts",
+    "test:lesson-builder": "tsx scripts/test-lesson-builder.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",

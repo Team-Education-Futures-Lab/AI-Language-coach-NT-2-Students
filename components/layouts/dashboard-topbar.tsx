@@ -49,18 +49,18 @@ export function DashboardTopbar({
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/10 bg-black/40 backdrop-blur-2xl px-4 lg:px-6">
       <div className="lg:hidden">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Menu openen">
+            <Button variant="ghost" size="icon" aria-label="Menu openen" className="text-white hover:bg-white/10">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="flex flex-col p-0">
-            <SheetHeader className="border-b px-6 py-4">
-              <SheetTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
+          <SheetContent side="left" className="flex flex-col p-0 border-white/10 bg-black/90 backdrop-blur-xl text-white">
+            <SheetHeader className="border-b border-white/10 px-6 py-4">
+              <SheetTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="h-5 w-5 text-fuchsia-400" />
                 Navigatie
               </SheetTitle>
             </SheetHeader>
@@ -71,7 +71,7 @@ export function DashboardTopbar({
                     <Button
                       asChild
                       variant="ghost"
-                      className="w-full justify-start gap-3 px-3"
+                      className="w-full justify-start gap-3 px-3 text-white/80 hover:text-white hover:bg-white/10"
                     >
                       <Link href={item.href}>
                         <item.icon className="h-5 w-5" />
@@ -82,10 +82,10 @@ export function DashboardTopbar({
                 ))}
               </ul>
             </nav>
-            <div className="border-t p-3">
+            <div className="border-t border-white/10 p-3">
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3"
+                className="w-full justify-start gap-3 border-white/20 text-white hover:bg-white/10"
                 onClick={handleSignOut}
                 disabled={isPending}
               >
@@ -98,27 +98,27 @@ export function DashboardTopbar({
       </div>
 
       <div className="mr-auto flex items-center gap-2 lg:hidden">
-        <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
+        <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white">
           <Sparkles className="h-4 w-4" />
         </span>
-        <span className="font-semibold">
-          Taalcoach<span className="text-primary">AI</span>
+        <span className="font-semibold text-white">
+          Taalcoach<span className="text-fuchsia-400">AI</span>
         </span>
       </div>
 
       <div className="ml-auto flex items-center gap-2 sm:gap-4">
         <div className="hidden items-center gap-3 sm:flex">
           <div className="text-right leading-tight">
-            <div className="text-sm font-medium">
+            <div className="text-sm font-medium text-white">
               {userName ?? "Gebruiker"}
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-white/60">
               {userEmail ?? ""}
             </div>
           </div>
-          <Avatar>
+          <Avatar className="ring-2 ring-white/20">
             {userImage ? <AvatarImage src={userImage} alt={userName ?? ""} /> : null}
-            <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-sm font-semibold text-white">
               {getInitials(userName) || <UserIcon className="h-4 w-4" />}
             </AvatarFallback>
           </Avatar>
@@ -127,6 +127,7 @@ export function DashboardTopbar({
           <Button
             variant="outline"
             size="sm"
+            className="border-white/20 text-white hover:bg-white/10"
             onClick={handleSignOut}
             disabled={isPending}
           >

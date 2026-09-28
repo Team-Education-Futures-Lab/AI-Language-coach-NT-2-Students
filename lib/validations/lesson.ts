@@ -19,6 +19,7 @@ const EXERCISE_TYPE_KEYS = Object.values(ExerciseTypeValues) as [
 ];
 
 export const lessonCreateSchema = z.object({
+  moduleId: z.string().cuid().nullable().optional(),
   title: z
     .string({ required_error: "Titel is verplicht" })
     .min(3, "Titel moet minimaal 3 tekens zijn")

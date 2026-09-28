@@ -51,8 +51,11 @@ import {
 } from "@/app/(dashboard)/lessons/actions";
 import { useTranslatedPayload } from "@/lib/i18n/useTranslatedPayload";
 
-type Props =
-  | {
+type Props = {
+  modules?: { id: string; title: string }[];
+  initialModuleId?: string;
+} & (
+  {
       mode: "create";
     }
   | {
@@ -68,8 +71,9 @@ type Props =
         order: number;
         published: boolean;
         coverImage: string | null;
+        moduleId?: string | null;
       };
-    };
+    });
 
 type FormValues = LessonCreateInput;
 
@@ -81,6 +85,7 @@ export function LessonEditor(props: Props) {
   const defaultValues: FormValues =
     props.mode === "edit"
       ? {
+          moduleId: props.initial.moduleId ?? null,
           title: props.initial.title,
           description: props.initial.description ?? "",
           topic: props.initial.topic ?? "",
@@ -92,6 +97,7 @@ export function LessonEditor(props: Props) {
           coverImage: props.initial.coverImage ?? "",
         }
       : {
+          moduleId: props.initialModuleId ?? null,
           title: "",
           description: "",
           topic: "",
@@ -234,25 +240,25 @@ export function LessonEditor(props: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href="/lessons">
+          <Button variant="ghost" size="sm" asChild className="-ml-2 text-white hover:bg-white/10">
+            <Link href="/lesson-builder">
               <ArrowLeft className="h-4 w-4" /> {translated.back}
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl flex items-center gap-2">
-              <BookOpen className="h-6 w-6 text-cozy-teal" />
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl flex items-center gap-2 text-white">
+              <BookOpen className="h-6 w-6 text-fuchsia-400" />
               {props.mode === "create" ? translated.createTitle : translated.editTitle}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-white/70">
               {props.mode === "create"
                 ? translated.createSubtitle
                 : `Les: ${props.initial.title}`}
               {isPublished && (
-                <Badge variant="success" className="ml-2">{translated.published}</Badge>
+                <Badge className="ml-2 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30 border-emerald-500/30">{translated.published}</Badge>
               )}
               {!isPublished && props.mode === "edit" && (
-                <Badge variant="sand" className="ml-2">{translated.draft}</Badge>
+                <Badge className="ml-2 bg-amber-500/20 text-amber-100 hover:bg-amber-500/30 border-amber-500/30">{translated.draft}</Badge>
               )}
             </p>
           </div>
@@ -266,22 +272,36 @@ export function LessonEditor(props: Props) {
           noValidate
         >
           <div className="grid gap-4 md:grid-cols-2">
+            <FormField control={form.control} name="moduleId" render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel className="text-white">Module</FormLabel>
+                <FormControl>
+                  <select className="min-h-11 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-white backdrop-blur-md focus:ring-2 focus:ring-indigo-500/50" value={field.value ?? ""} disabled={isPending} onChange={(event) => field.onChange(event.target.value || null)}>
+                    <option value="">Losse les (geen module)</option>
+                    {props.modules?.map((module) => <option key={module.id} value={module.id}>{module.title}</option>)}
+                  </select>
+                </FormControl>
+                <FormDescription className="text-white/50">Bundel deze les met andere lessen in een leerroute.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
             <div className="md:col-span-2">
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{translated.lessonTitle}</FormLabel>
+                    <FormLabel className="text-white">{translated.lessonTitle}</FormLabel>
                     <FormControl>
                       <Input
                         disabled={isPending}
                         placeholder={translated.lessonTitlePlaceholder}
                         {...field}
                         value={field.value ?? ""}
+                        className="bg-black/40 border-white/10 text-white"
                       />
                     </FormControl>
-                    <FormDescription>
+                    <FormDescription className="text-white/50">
                       {translated.lessonTitleDesc}
                     </FormDescription>
                     <FormMessage />
@@ -295,18 +315,18 @@ export function LessonEditor(props: Props) {
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{translated.category}</FormLabel>
+                  <FormLabel className="text-white">{translated.category}</FormLabel>
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
                     disabled={isPending}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-black/40 border-white/10 text-white">
                         <SelectValue placeholder={translated.chooseCategory} />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="bg-black/90 border-white/10 text-white backdrop-blur-xl">
                       {Object.entries(LESSON_CATEGORY_LABELS).map(([k, label]) => (
                         <SelectItem key={k} value={k}>
                           {label}
@@ -314,7 +334,7 @@ export function LessonEditor(props: Props) {
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
+                  <FormDescription className="text-white/50">
                     {LESSON_CATEGORY_DESCRIPTIONS[category as LessonCategory]}
                   </FormDescription>
                   <FormMessage />
@@ -327,18 +347,18 @@ export function LessonEditor(props: Props) {
               name="languageLevel"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{translated.level}</FormLabel>
+                  <FormLabel className="text-white">{translated.level}</FormLabel>
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
                     disabled={isPending}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-black/40 border-white/10 text-white">
                         <SelectValue placeholder={translated.chooseLevel} />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="bg-black/90 border-white/10 text-white backdrop-blur-xl">
                       {Object.entries(LANGUAGE_LEVEL_LABELS).map(([k, label]) => (
                         <SelectItem key={k} value={k}>
                           {label}
@@ -346,7 +366,7 @@ export function LessonEditor(props: Props) {
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
+                  <FormDescription className="text-white/50">
                     {translated.levelDesc}
                   </FormDescription>
                   <FormMessage />
@@ -359,16 +379,17 @@ export function LessonEditor(props: Props) {
               name="topic"
               render={({ field }) => (
                 <FormItem className="md:col-span-1">
-                  <FormLabel>{translated.theme}</FormLabel>
+                  <FormLabel className="text-white">{translated.theme}</FormLabel>
                   <FormControl>
                     <Input
                       disabled={isPending}
                         placeholder={translated.themePlaceholder}
                       {...field}
                       value={field.value ?? ""}
+                      className="bg-black/40 border-white/10 text-white"
                     />
                   </FormControl>
-                  <FormDescription>
+                  <FormDescription className="text-white/50">
                     {translated.themeDesc}
                   </FormDescription>
                   <FormMessage />
@@ -381,7 +402,7 @@ export function LessonEditor(props: Props) {
               name="order"
               render={({ field }) => (
                 <FormItem className="md:col-span-1">
-                  <FormLabel>{translated.order}</FormLabel>
+                  <FormLabel className="text-white">{translated.order}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -389,9 +410,10 @@ export function LessonEditor(props: Props) {
                       disabled={isPending}
                       {...field}
                       value={field.value ?? 0}
+                      className="bg-black/40 border-white/10 text-white"
                     />
                   </FormControl>
-                  <FormDescription>
+                  <FormDescription className="text-white/50">
                     {translated.orderDesc}
                   </FormDescription>
                   <FormMessage />
@@ -404,16 +426,17 @@ export function LessonEditor(props: Props) {
               name="coverImage"
               render={({ field }) => (
                 <FormItem className="md:col-span-2">
-                  <FormLabel>{translated.cover}</FormLabel>
+                  <FormLabel className="text-white">{translated.cover}</FormLabel>
                   <FormControl>
                     <Input
                       disabled={isPending}
                       placeholder="https://..."
                       {...field}
                       value={field.value ?? ""}
+                      className="bg-black/40 border-white/10 text-white"
                     />
                   </FormControl>
-                  <FormDescription>
+                  <FormDescription className="text-white/50">
                     {translated.coverDesc}
                   </FormDescription>
                   <FormMessage />
@@ -426,7 +449,7 @@ export function LessonEditor(props: Props) {
               name="description"
               render={({ field }) => (
                 <FormItem className="md:col-span-2">
-                  <FormLabel>{translated.description}</FormLabel>
+                  <FormLabel className="text-white">{translated.description}</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={5}
@@ -434,9 +457,10 @@ export function LessonEditor(props: Props) {
                       placeholder={translated.descriptionPlaceholder}
                       {...field}
                       value={field.value ?? ""}
+                      className="bg-black/40 border-white/10 text-white"
                     />
                   </FormControl>
-                  <FormDescription>
+                  <FormDescription className="text-white/50">
                     {translated.descriptionDesc}
                   </FormDescription>
                   <FormMessage />
@@ -446,23 +470,23 @@ export function LessonEditor(props: Props) {
           </div>
 
           <div className="space-y-3">
-            <FormLabel className="flex items-center gap-1">
-              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+            <FormLabel className="flex items-center gap-1 text-white">
+              <Tag className="h-3.5 w-3.5 text-white/50" />
               {translated.goals}
             </FormLabel>
-            <FormDescription>
+            <FormDescription className="text-white/50">
               {translated.goalsDesc}
             </FormDescription>
             <div className="space-y-2">
               {goals.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
                   {goals.map((v, i) => (
-                    <Badge key={`${v}-${i}`} variant="sand" className="gap-1">
+                    <Badge key={`${v}-${i}`} className="gap-1 bg-white/10 text-white hover:bg-white/20 border-white/20">
                       {v}
                       <button
                         type="button"
                         onClick={() => removeGoal(i)}
-                        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-foreground/10"
+                        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-white/20"
                         aria-label={`${v} verwijderen`}
                       >
                         <X className="h-3 w-3" />
@@ -489,12 +513,13 @@ export function LessonEditor(props: Props) {
                       removeGoal(goals.length - 1);
                     }
                   }}
+                  className="bg-black/40 border-white/10 text-white"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => addGoal()}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap border-white/20 text-white hover:bg-white/10"
                 >
                   {translated.addGoal}
                 </Button>
@@ -510,7 +535,7 @@ export function LessonEditor(props: Props) {
                 onSubmitCommon(form.getValues(), { publish: false })
               }
               disabled={isPending}
-              className="sm:w-auto"
+              className="sm:w-auto border-white/20 text-white hover:bg-white/10"
             >
               {isPending ? (
                 <>
@@ -530,12 +555,11 @@ export function LessonEditor(props: Props) {
             </Button>
             <Button
               type="button"
-              variant="sunset"
               onClick={() =>
                 onSubmitCommon(form.getValues(), { publish: true })
               }
               disabled={isPending}
-              className="sm:w-auto"
+              className="sm:w-auto bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:brightness-110 shadow-lg"
             >
               {isPending ? (
                 <>

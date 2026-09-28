@@ -94,20 +94,20 @@ export function LessonDetailClient({
         </Button>
       </div>
 
-      <header className="rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6 sm:p-8">
+      <header className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-2xl p-6 sm:p-8">
         <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-start">
           <div className="flex items-start gap-4">
-            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary shadow-sm">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-fuchsia-500/10 text-fuchsia-400 shadow-sm border border-fuchsia-500/20">
               <BookOpen className="h-7 w-7" />
             </span>
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="bg-white/10 text-white">
                   {LANGUAGE_LEVEL_LABELS[lesson.languageLevel as keyof typeof LANGUAGE_LEVEL_LABELS] ??
                     lesson.languageLevel}
                 </Badge>
                 {lesson.topic && (
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="border-white/20 text-white">
                     {showNlRef ? (
                       <Bilingual nl={lesson.topic} size="sm" variant="inline">
                         {translated.lesson.topic}
@@ -117,7 +117,7 @@ export function LessonDetailClient({
                     )}
                   </Badge>
                 )}
-                <Badge variant="success">
+                <Badge variant="success" className="bg-emerald-500/20 text-emerald-100">
                   {showNlRef ? (
                     <Bilingual
                       nl={`+${totalXp} XP totaal`}
@@ -131,7 +131,7 @@ export function LessonDetailClient({
                   )}
                 </Badge>
               </div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl text-white">
                 {showNlRef ? (
                   <Bilingual nl={lesson.title} size="xl">
                     {translated.lesson.title}
@@ -141,7 +141,7 @@ export function LessonDetailClient({
                 )}
               </h1>
               {lesson.description && (
-                <p className="max-w-2xl text-muted-foreground">
+                <p className="max-w-2xl text-white/70">
                   {showNlRef ? (
                     <Bilingual nl={lesson.description} size="sm">
                       {translated.lesson.description}
@@ -154,7 +154,7 @@ export function LessonDetailClient({
             </div>
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-white/70">
               <Award className="h-4 w-4" />
               {showNlRef ? (
                 <Bilingual
@@ -169,7 +169,7 @@ export function LessonDetailClient({
               )}
             </div>
             {lesson.exercises.length > 0 && (
-              <Button asChild>
+              <Button asChild className="bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:brightness-110">
                 <Link href={`/exercise/${lesson.exercises[0].id}`}>
                   {showNlRef ? (
                     <Bilingual nl="Eerste oefening" size="sm" variant="inline">
@@ -187,7 +187,7 @@ export function LessonDetailClient({
       </header>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">
+        <h2 className="text-lg font-semibold text-white">
           {showNlRef ? (
             <Bilingual nl="Oefeningen in deze les" size="lg">
               {translated.sectionTitle}
@@ -198,7 +198,7 @@ export function LessonDetailClient({
         </h2>
         {lesson.exercises.length === 0 ? (
           <EmptyState
-            icon={<Sparkles className="h-8 w-8" />}
+            icon={<Sparkles className="h-8 w-8 text-fuchsia-400" />}
             title={translated.emptyTitle}
             description={translated.emptyDescription}
           />
@@ -208,17 +208,17 @@ export function LessonDetailClient({
               <Card key={ex.id} className="transition hover:shadow-sm">
                 <CardHeader>
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="border-white/20 text-white">
                       {EXERCISE_TYPE_LABELS[ex.type as keyof typeof EXERCISE_TYPE_LABELS] ??
                         ex.type}
                     </Badge>
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="bg-white/10 text-white">
                       {DIFFICULTY_LABELS[ex.difficulty as keyof typeof DIFFICULTY_LABELS] ??
                         `${translated.levelLabel} ${ex.difficulty}`}
                     </Badge>
-                    <Badge variant="success">+{ex.xpReward} XP</Badge>
+                    <Badge variant="success" className="bg-emerald-500/20 text-emerald-100">+{ex.xpReward} XP</Badge>
                   </div>
-                  <CardTitle className="pt-2 text-base">
+                  <CardTitle className="pt-2 text-base text-white">
                     {idx + 1}.{" "}
                     {showNlRef ? (
                       <Bilingual nl={ex.title} size="md">
@@ -229,7 +229,7 @@ export function LessonDetailClient({
                     )}
                   </CardTitle>
                   {ex.description && (
-                    <CardDescription className="line-clamp-3">
+                    <CardDescription className="line-clamp-3 text-white/70">
                       {showNlRef ? (
                         <Bilingual nl={ex.description} size="sm">
                           {translated.exercises[idx]?.description ?? ex.description}
@@ -242,7 +242,7 @@ export function LessonDetailClient({
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-white/50">
                       {ex.type === "MULTIPLE_CHOICE" ||
                       ex.type === "FILL_IN_BLANK"
                         ? translated.ready
@@ -251,6 +251,7 @@ export function LessonDetailClient({
                     <Button
                       asChild
                       size="sm"
+                      className="bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:brightness-110"
                       disabled={
                         ex.type !== "MULTIPLE_CHOICE" &&
                         ex.type !== "FILL_IN_BLANK"

@@ -219,10 +219,10 @@ export function ExerciseBuilder({ lessonId, initialExercises }: Props) {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+          <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 text-white">
             🧩 {translated.title}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-white/70">
             {sortedExercises.length === 0
               ? translated.emptyDesc
               : translated.filledDesc.replace(
