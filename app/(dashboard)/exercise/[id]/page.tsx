@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/auth";
 import { db } from "@/lib/db/prisma";
 import { parseExercise } from "@/lib/validations/exercise";
 import { ExerciseDetailClient } from "@/components/features/exercises/ExerciseDetailClient";
+import { canReadLesson } from "@/lib/auth/lesson-access";
 
 export const metadata: Metadata = {
   title: "Oefening",
@@ -21,16 +22,16 @@ export default async function ExercisePage(props: {
   const raw = await db.exercise.findUnique({
     where: { id },
     include: {
-      lesson: { select: { id: true, title: true, topic: true } },
+      lesson: { select: { id: true, title: true, topic: true, published: true, createdById: true } },
     },
   });
-  if (!raw) notFound();
+  if (!raw || !canReadLesson(user, raw.lesson)) notFound();
 
   const siblings = raw.lessonId
     ? await db.exercise.findMany({
         where: { lessonId: raw.lessonId },
         select: { id: true },
-        orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
       })
     : [];
   const currentIndex = siblings.findIndex((s) => s.id === id);

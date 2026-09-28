@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "@/auth";
+import { getCurrentUser, isTeacherRole } from "@/auth";
 import { db } from "@/lib/db/prisma";
 import { LessonEditor } from "@/components/features/lessons/LessonEditor";
 import { ExerciseBuilder } from "@/components/features/lessons/ExerciseBuilder";
@@ -18,6 +18,7 @@ export default async function EditLessonPage(props: {
   const { id } = await props.params;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (!isTeacherRole(user.role)) redirect("/dashboard");
 
   const lesson = await db.lesson.findUnique({
     where: { id },
@@ -41,20 +42,26 @@ export default async function EditLessonPage(props: {
 
   if (!lesson) notFound();
 
-  if (lesson.createdById && lesson.createdById !== user.id) {
+  if (user.role !== "ADMIN" && lesson.createdById !== user.id) {
     redirect("/lessons");
   }
 
   const goals = Array.isArray(lesson.goals)
     ? (lesson.goals.filter((g): g is string => typeof g === "string") as string[])
     : [];
+  const modules = await db.lessonModule.findMany({
+    where: user.role === "ADMIN" ? {} : { createdById: user.id },
+    select: { id: true, title: true }, orderBy: { title: "asc" },
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <LessonEditor
         mode="edit"
         lessonId={lesson.id}
+        modules={modules}
         initial={{
+          moduleId: lesson.moduleId,
           title: lesson.title,
           description: lesson.description,
           topic: lesson.topic,

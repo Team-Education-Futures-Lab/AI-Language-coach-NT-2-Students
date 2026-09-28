@@ -14,8 +14,16 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
+      role: UserRole;
     } & DefaultSession["user"];
   }
+}
+
+export const USER_ROLES = ["ADMIN", "TEACHER", "STUDENT"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export function isTeacherRole(role?: string | null): boolean {
+  return role === "ADMIN" || role === "TEACHER";
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -55,12 +63,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        (token as { role?: UserRole }).role = (
+          "role" in user && typeof user.role === "string"
+            ? user.role
+            : "STUDENT"
+        ) as UserRole;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = (token.id as string) ?? session.user.id;
+        session.user.role = (
+          (token as { role?: UserRole }).role ?? "STUDENT"
+        ) as UserRole;
       }
       return session;
     },
@@ -76,6 +92,28 @@ export async function getCurrentUser() {
     where: { id: session.user.id },
     include: { profile: true },
   });
+}
+
+export async function requireTeacher() {
+  const user = await getCurrentUser();
+  if (!user?.id) {
+    throw new Error("Je moet ingelogd zijn om deze pagina te gebruiken.");
+  }
+  if (!isTeacherRole(user.role)) {
+    throw new Error("Deze functie is alleen beschikbaar voor docenten.");
+  }
+  return user;
+}
+
+export async function requireAdmin() {
+  const user = await getCurrentUser();
+  if (!user?.id) {
+    throw new Error("Je moet ingelogd zijn om deze pagina te gebruiken.");
+  }
+  if (user.role !== "ADMIN") {
+    throw new Error("Deze functie is alleen beschikbaar voor beheerders.");
+  }
+  return user;
 }
 
 export async function registerUser(input: {
@@ -107,6 +145,7 @@ export async function registerUser(input: {
       name,
       email,
       passwordHash,
+      role: "STUDENT",
       profile: {
         create: {
           languageLevel: "A1",

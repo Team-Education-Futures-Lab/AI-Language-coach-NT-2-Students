@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { auth } from "./auth";
+import { getToken } from "next-auth/jwt";
 
 const PUBLIC_ROUTES = ["/", "/login", "/register"];
 const START_PAGE = "/dashboard";
@@ -26,14 +26,20 @@ export default async function middleware(request: NextRequest) {
 
   if (isApiAuthRoute || isApiI18nRoute || isStatic) return;
 
-  const session = await auth();
-  const isLoggedIn = !!session?.user;
+  const token = await getToken({ req: request, secret: process.env.AUTH_SECRET });
+  const isLoggedIn = !!token;
 
   if (isLoggedIn && (pathname === "/login" || pathname === "/register")) {
     return Response.redirect(new URL(START_PAGE, request.nextUrl));
   }
 
   if (!isLoggedIn && !isPublic) {
+    if (pathname.startsWith("/api/")) {
+      return Response.json(
+        { ok: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
     const url = new URL(LOGIN_PAGE, request.nextUrl);
     url.searchParams.set("callbackUrl", pathname);
     return Response.redirect(url);

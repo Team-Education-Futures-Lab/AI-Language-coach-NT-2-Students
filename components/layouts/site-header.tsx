@@ -27,7 +27,7 @@ export function SiteHeader({ className }: { className?: string }) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 w-full border-b border-cozy-sand/40 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50",
+        "sticky top-0 z-40 w-full border-b border-white/10 bg-black/40 backdrop-blur-2xl supports-[backdrop-filter]:bg-black/20",
         className,
       )}
     >
@@ -41,7 +41,7 @@ export function SiteHeader({ className }: { className?: string }) {
             <Link
               key={l.href}
               href={l.href}
-              className="text-sm font-semibold text-cozy-ink/70 transition-colors hover:text-cozy-ink"
+              className="text-sm font-semibold text-white/70 transition-colors hover:text-white"
             >
               {l.label}
             </Link>
@@ -53,14 +53,14 @@ export function SiteHeader({ className }: { className?: string }) {
             asChild
             variant="ghost"
             size="sm"
-            className="rounded-full text-cozy-ink/80 hover:bg-cozy-sand/30 hover:text-cozy-ink"
+            className="rounded-lg text-white/80 hover:bg-white/10 hover:text-white"
           >
             <Link href="/login">Inloggen</Link>
           </Button>
           <Button
             asChild
             size="sm"
-            className="rounded-full shadow-soft bg-gradient-to-r from-cozy-terracotta to-cozy-orange text-white hover:brightness-105"
+            className="rounded-lg shadow-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:brightness-110"
           >
             <Link href="/register">Gratis account</Link>
           </Button>
@@ -68,14 +68,14 @@ export function SiteHeader({ className }: { className?: string }) {
 
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden rounded-full text-cozy-ink hover:bg-cozy-sand/30" aria-label="Menu">
+            <Button variant="ghost" size="icon" className="md:hidden rounded-lg text-white hover:bg-white/10" aria-label="Menu">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="border-cozy-sand/40 bg-[#FFFBF2]">
+          <SheetContent side="left" className="border-white/10 bg-black/90 backdrop-blur-xl text-white">
             <SheetHeader>
-              <SheetTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-cozy-terracotta" />
+              <SheetTitle className="flex items-center gap-2 text-white">
+                <BookOpen className="h-5 w-5 text-fuchsia-400" />
                 Menu
               </SheetTitle>
             </SheetHeader>
@@ -84,16 +84,16 @@ export function SiteHeader({ className }: { className?: string }) {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="text-base font-semibold text-cozy-ink/85 hover:text-cozy-terracotta"
+                  className="text-base font-semibold text-white/80 hover:text-fuchsia-400"
                 >
                   {l.label}
                 </Link>
               ))}
               <div className="mt-6 space-y-2">
-                <Button asChild variant="outline" className="w-full rounded-full border-cozy-teal/30 text-cozy-ink">
+                <Button asChild variant="outline" className="w-full rounded-lg border-white/20 text-white hover:bg-white/10">
                   <Link href="/login">Inloggen</Link>
                 </Button>
-                <Button asChild className="w-full rounded-full bg-gradient-to-r from-cozy-terracotta to-cozy-orange text-white">
+                <Button asChild className="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white shadow-lg hover:brightness-110">
                   <Link href="/register">Gratis account</Link>
                 </Button>
               </div>

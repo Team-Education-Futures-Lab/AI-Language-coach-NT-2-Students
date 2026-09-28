@@ -5,6 +5,8 @@ import { LANGUAGES } from "@/lib/i18n/types";
 
 const cache = new Map<string, unknown>();
 const stringCache = new Map<string, string>();
+const contentCache = new Map<string, unknown>();
+const contentRequests = new Map<string, Promise<unknown>>();
 const OLLAMA_URL = "http://127.0.0.1:11434";
 const CACHE_VERSION = "i18n-v5";
 const GOOGLE_LOCALE_ALIASES: Record<string, string> = {
@@ -265,6 +267,7 @@ async function translatePayloadGoogle(
 
   let batch: Array<{
     key: string;
+    cacheKey: string;
     original: string;
     protectedText: string;
     vars: string[];
@@ -297,6 +300,9 @@ async function translatePayloadGoogle(
         item.key,
         isUsableTranslation(item.original, restored) ? restored : item.original,
       );
+      if (isUsableTranslation(item.original, restored)) {
+        stringCache.set(item.cacheKey, restored);
+      }
     }
 
     batch = [];
@@ -311,13 +317,19 @@ async function translatePayloadGoogle(
 
     const { text: protectedText, vars } = protectPlaceholders(leaf.text);
     const key = pathKey(leaf.path);
+    const cacheKey = `${CACHE_VERSION}:google:${from}:${targetLocale}\n${leaf.text}`;
+    const cachedTranslation = stringCache.get(cacheKey);
+    if (cachedTranslation) {
+      translatedMap.set(key, cachedTranslation);
+      continue;
+    }
     const nextSize = batchChars + protectedText.length;
 
     if (batch.length >= 40 || nextSize > 3500) {
       await flushBatch();
     }
 
-    batch.push({ key, original: leaf.text, protectedText, vars });
+    batch.push({ key, cacheKey, original: leaf.text, protectedText, vars });
     batchChars += protectedText.length;
   }
 
@@ -586,11 +598,37 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const translated = await translatePayloadGoogle(
-      body.payload,
-      locale,
-      body.source?.trim() || "auto",
-    );
+    const source = body.source?.trim() || "auto";
+    const serializedPayload = JSON.stringify(body.payload);
+    const contentCacheKey = `${CACHE_VERSION}:content:${locale}:${source}:${serializedPayload}`;
+    const cachedPayload = contentCache.get(contentCacheKey);
+
+    if (cachedPayload !== undefined) {
+      return NextResponse.json({
+        ok: true,
+        payload: cachedPayload,
+        meta: { translated: true, provider: "memory_cache" },
+      });
+    }
+
+    let translationRequest = contentRequests.get(contentCacheKey);
+    if (!translationRequest) {
+      translationRequest = translatePayloadGoogle(body.payload, locale, source)
+        .then((result) => {
+          if (contentCache.size >= 500) {
+            const oldestKey = contentCache.keys().next().value;
+            if (oldestKey) contentCache.delete(oldestKey);
+          }
+          contentCache.set(contentCacheKey, result);
+          return result;
+        })
+        .finally(() => {
+          contentRequests.delete(contentCacheKey);
+        });
+      contentRequests.set(contentCacheKey, translationRequest);
+    }
+
+    const translated = await translationRequest;
 
     return NextResponse.json({
       ok: true,

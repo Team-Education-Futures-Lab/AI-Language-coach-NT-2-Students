@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Loader2,
   Mic,
@@ -8,6 +10,7 @@ import {
   SendHorizonal,
   Square,
   Sparkles,
+  Trophy,
   Volume2,
   VolumeX,
   Wand2,
@@ -20,21 +23,21 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { getSectorLabel } from "@/lib/i18n/dictionaries";
 import { useTranslatedPayload } from "@/lib/i18n/useTranslatedPayload";
 import { useSector } from "@/lib/sector/SectorProvider";
+import { getLearningScenarios } from "@/lib/ai/learning-scenarios";
+import type { LearningMission } from "@/lib/learning/missions";
 import type {
   CoachMessage,
   CoachReviewResponse,
   CoachTurnResponse,
 } from "@/lib/ai/voice-coach";
 
-type Scenario = {
-  id: string;
-  title: string;
-  goal: string;
-  level: "A1" | "A2" | "B1";
-  starter: string;
-};
-
 type CoachUiAction = "start-roleplay" | "start-capture" | "finish-session" | "reset-session";
+type CoachProgressReward = {
+  xpEarned: number;
+  level: number;
+  leveledUp: boolean;
+  alreadySaved: boolean;
+};
 
 const PREMIUM_VOICE_HINTS = [
   "siri",
@@ -95,93 +98,82 @@ function scoreVoice(voice: SpeechSynthesisVoice) {
   return score;
 }
 
-export function VoiceCoachSession() {
+export function VoiceCoachSession({ initialLevel = "A2", initialScenario, initialMission }: { initialLevel?: string; initialScenario?: string; initialMission?: LearningMission | null }) {
+  const router = useRouter();
   const { locale } = useLocale();
   const { sector } = useSector();
   const sectorLabel = getSectorLabel(locale, sector.dictKey);
+  const dutchSectorLabel = getSectorLabel("nl", sector.dictKey);
 
-  const scenarios = useMemo<Scenario[]>(
-    () => [
-      {
-        id: "handover",
-        title: "Internship handover",
-        goal: "Explain what is finished, what is blocked, and what still needs to happen.",
-        level: "B1",
-        starter:
-          "Goedemorgen. We oefenen een overdracht op je stage. Vertel kort wat al klaar is en wat nog moet gebeuren.",
-      },
-      {
-        id: "workshop",
-        title: "Workshop status update",
-        goal: "Explain a technical problem and ask clearly for the next step.",
-        level: "A2",
-        starter:
-          "Je staat in de werkplaats. Leg uit welk probleem je ziet en welke hulp je nodig hebt.",
-      },
-      {
-        id: "service",
-        title: "Customer question",
-        goal: "Answer politely, check understanding, and stay calm under pressure.",
-        level: "A1",
-        starter:
-          "Een klant stelt een simpele vraag. Geef een beleefd antwoord en controleer of de klant je begrijpt.",
-      },
-    ],
-    [],
+  const [level, setLevel] = useState<"A1" | "A2" | "B1">(
+    initialLevel === "A1" ? "A1" : initialLevel === "A2" ? "A2" : "B1",
   );
+  const scenarios = useMemo(() => {
+    const base = getLearningScenarios(sector.code).map((item) => ({ ...item, level }));
+    if (!initialMission) return base;
+    return [{
+      id: initialMission.id,
+      title: initialMission.shortTitle,
+      goal: initialMission.goal,
+      starter: initialMission.starter,
+      example: initialMission.example,
+      minutes: initialMission.minutes,
+      level,
+    }];
+  }, [initialMission, sector.code, level]);
 
   const ui = useTranslatedPayload(
     {
-      title: "Try the coach session",
+      title: "Jouw oefengesprek",
       subtitle:
-        "This is the first working MVP loop: choose a roleplay, speak or type, get one focused correction, then finish with a session review.",
+        "Kies een situatie. Spreek of typ een antwoord. Fouten maken mag.",
       labels: {
-        scenario: "Scenario",
-        transcript: "Your answer",
-        speech: "Voice input",
-        voiceOutput: "Coach voice",
-        feedback: "Live coaching",
-        review: "Session review",
-        vocabulary: "Useful words",
-        selectedVoice: "Selected voice",
+        scenario: "Wat wil je oefenen?",
+        transcript: "Jouw antwoord",
+        speech: "Spreken",
+        voiceOutput: "Luisteren",
+        feedback: "Een kleine stap vooruit",
+        review: "Jouw terugblik",
+        vocabulary: "Woorden voor jouw opleiding",
+        selectedVoice: "Stem",
       },
       actions: {
-        startMic: "Start mic",
-        stopMic: "Stop mic",
-        autoListenOn: "Auto listen on",
-        autoListenOff: "Auto listen off",
-        replayCoach: "Replay coach",
-        stopCoach: "Stop voice",
-        autoSpeakOn: "Auto speak on",
-        autoSpeakOff: "Auto speak off",
-        send: "Send turn",
-        finish: "Finish session",
-        reset: "Reset",
+        startMic: "Ik wil spreken",
+        stopMic: "Klaar met spreken",
+        autoListenOn: "Gesprek automatisch voortzetten",
+        autoListenOff: "Zelf de microfoon starten",
+        replayCoach: "Nog eens luisteren",
+        stopCoach: "Stop de stem",
+        autoSpeakOn: "Voorlezen aan",
+        autoSpeakOff: "Voorlezen uit",
+        send: "Verstuur",
+        finish: "Afronden",
+        reset: "Opnieuw",
       },
       notes: {
-        speechReady: "Browser speech input is available.",
+        speechReady: "Je microfoon is beschikbaar.",
         speechMissing:
-          "Lokale voice capture is hier nog niet beschikbaar. Typen werkt al, en deze sessie is nu ingericht voor een faster-whisper runtime.",
+          "Spreken kan hier niet. Je kunt je antwoord typen.",
         autoListen:
-          "Handsfree mode listens for one turn, stops automatically after silence, and starts the next turn again after the coach reply.",
-        voiceReady: "AI voice output is ready, with browser voice as fallback.",
+          "Praat rustig. Na een stilte versturen we je antwoord.",
+        voiceReady: "Je kunt naar de coach luisteren.",
         voiceMissing:
-          "Audio playback is not available here. The coach still replies in text.",
+          "Geluid kan hier niet. Lees het antwoord hieronder.",
         voiceQuality:
-          "De coach gebruikt nu de lokale voice runtime voor transcriptie en Piper-audio, met browserstem als fallback als dat nodig is.",
+          "Luister zo vaak als je wilt. Je hoeft niet snel te antwoorden.",
         ollamaFallback:
-          "If Ollama is not available, the coach still returns a safe fallback so the flow keeps working.",
+          "De coach is AI en kan fouten maken. Vraag je docent als je twijfelt.",
       },
     },
-    { source: "auto" },
+    { source: "nl" },
   );
 
   const translatedScenarios = useTranslatedPayload(
-    scenarios.map(({ id, title, goal, level }) => ({ id, title, goal, level })),
-    { source: "auto" },
+    scenarios.map(({ title, goal }) => ({ title, goal })),
+    { source: "nl" },
   );
 
-  const [selectedId, setSelectedId] = useState(scenarios[0].id);
+  const [selectedId, setSelectedId] = useState(scenarios.find((item) => item.id === initialScenario)?.id ?? scenarios[0].id);
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [speechSupported, setSpeechSupported] = useState(false);
@@ -196,8 +188,21 @@ export function VoiceCoachSession() {
   const [voicePhase, setVoicePhase] = useState<string | null>(null);
   const [turnData, setTurnData] = useState<CoachTurnResponse | null>(null);
   const [reviewData, setReviewData] = useState<CoachReviewResponse | null>(null);
+  const [progressReward, setProgressReward] = useState<CoachProgressReward | null>(null);
   const [isTurnLoading, setIsTurnLoading] = useState(false);
   const [isReviewLoading, setIsReviewLoading] = useState(false);
+  const [saveProgress, setSaveProgress] = useState(false);
+  const [reviewSaved, setReviewSaved] = useState(false);
+  const sessionIdRef = useRef<string>("");
+  const generationRef = useRef(0);
+  const busyRef = useRef(false);
+  const speechJobRef = useRef(0);
+  const speechRequestRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startListeningRef = useRef<() => void>(() => {});
+  const submitRef = useRef<(text: string) => Promise<void>>(async () => {});
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
@@ -223,11 +228,19 @@ export function VoiceCoachSession() {
   function resetSession(nextScenarioId = selectedScenario.id) {
     const scenario =
       scenarios.find((item) => item.id === nextScenarioId) ?? scenarios[0];
+    generationRef.current += 1;
+    sessionIdRef.current = crypto.randomUUID();
+    stopListening(true);
     stopSpeaking();
+    busyRef.current = false;
+    setIsTurnLoading(false);
+    setIsReviewLoading(false);
     setMessages([{ role: "assistant", content: scenario.starter }]);
     setDraft("");
     setTurnData(null);
     setReviewData(null);
+    setProgressReward(null);
+    setReviewSaved(false);
     setError(null);
     setVoicePhase(null);
   }
@@ -235,7 +248,36 @@ export function VoiceCoachSession() {
   useEffect(() => {
     resetSession(selectedId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [selectedId, sector.code, level]);
+
+  useEffect(() => {
+    const log = messagesEndRef.current?.parentElement;
+    if (log) {
+      log.scrollTo({
+        top: log.scrollHeight,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    }
+  }, [messages.length, isTurnLoading]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    const controller = new AbortController();
+    void fetch("/api/coach/warmup", {
+      method: "POST",
+      cache: "no-store",
+      signal: controller.signal,
+    }).catch(() => {});
+
+    return () => {
+      mountedRef.current = false;
+      generationRef.current += 1;
+      speechJobRef.current += 1;
+      speechRequestRef.current?.abort();
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -280,6 +322,9 @@ export function VoiceCoachSession() {
   }, []);
 
   function stopSpeaking() {
+    speechJobRef.current += 1;
+    speechRequestRef.current?.abort();
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     pendingAutoListenRef.current = false;
     if (audioRef.current) {
       audioRef.current.pause();
@@ -321,7 +366,8 @@ export function VoiceCoachSession() {
     const formData = new FormData();
     setVoicePhase("Ik zet je antwoord om naar tekst...");
     formData.set("audio", audioBlob, "voice-turn.webm");
-    formData.set("language", locale.startsWith("nl") ? "nl" : locale);
+    formData.set("language", "nl");
+    const generation = generationRef.current;
 
     const response = await fetch("/api/voice/transcribe", {
       method: "POST",
@@ -339,8 +385,9 @@ export function VoiceCoachSession() {
       throw new Error("Er werd geen duidelijke spraak herkend.");
     }
 
+    if (generation !== generationRef.current) return;
     setDraft(transcript);
-    await submitTurn(transcript);
+    await submitRef.current(transcript);
   }
 
   function speakWithBrowserVoice(text: string) {
@@ -428,6 +475,7 @@ export function VoiceCoachSession() {
     }
 
     stopSpeaking();
+    const speechJob = speechJobRef.current;
     setError(null);
     setVoicePhase("Ik maak de coachstem klaar...");
 
@@ -435,6 +483,7 @@ export function VoiceCoachSession() {
 
     try {
       const abortController = new AbortController();
+      speechRequestRef.current = abortController;
       timeoutId = window.setTimeout(() => {
         abortController.abort();
       }, AI_TTS_TIMEOUT_MS);
@@ -458,6 +507,7 @@ export function VoiceCoachSession() {
       }
 
       const audioBlob = await response.blob();
+      if (!mountedRef.current || speechJob !== speechJobRef.current) return;
       if (!audioBlob.size) {
         throw new Error("Empty audio response.");
       }
@@ -468,10 +518,11 @@ export function VoiceCoachSession() {
       audioUrlRef.current = nextAudioUrl;
       audioRef.current = nextAudio;
       setSelectedVoiceLabel(
-        `${response.headers.get("X-TTS-Voice-Label") ?? "Fenna Neural"} (AI)`,
+        `${response.headers.get("X-Voice-Label") ?? "Nederlandse coach"} (AI)`,
       );
 
       nextAudio.onended = () => {
+        if (speechJob !== speechJobRef.current) return;
         setSpeaking(false);
         setVoicePhase(null);
         if (audioUrlRef.current === nextAudioUrl) {
@@ -483,9 +534,7 @@ export function VoiceCoachSession() {
         }
         if (pendingAutoListenRef.current) {
           pendingAutoListenRef.current = false;
-          window.setTimeout(() => {
-            startListening();
-          }, 250);
+          resumeListening();
         }
       };
 
@@ -518,6 +567,7 @@ export function VoiceCoachSession() {
       if (timeoutId !== null) {
         window.clearTimeout(timeoutId);
       }
+      if (!mountedRef.current || speechJob !== speechJobRef.current) return;
       stopSpeaking();
       if (browserVoiceSupported) {
         speakWithBrowserVoice(content);
@@ -532,8 +582,14 @@ export function VoiceCoachSession() {
     }
   }
 
+  function resumeListening() {
+    resumeTimerRef.current = setTimeout(() => {
+      if (mountedRef.current && !busyRef.current) startListeningRef.current();
+    }, 250);
+  }
+
   function continueHandsFreeLoop() {
-    if (!handsFreeMode || listening || isTurnLoading || isReviewLoading) {
+    if (!handsFreeMode || isReviewLoading) {
       pendingAutoListenRef.current = false;
       return;
     }
@@ -544,9 +600,7 @@ export function VoiceCoachSession() {
     }
 
     pendingAutoListenRef.current = false;
-    window.setTimeout(() => {
-      startListening();
-    }, 250);
+    resumeListening();
   }
 
   useEffect(() => {
@@ -610,7 +664,7 @@ export function VoiceCoachSession() {
 
   function startListening() {
     if (typeof window === "undefined") return;
-    if (listening || isTurnLoading || isReviewLoading) return;
+    if (listening || busyRef.current || isReviewLoading) return;
     if (
       typeof window.MediaRecorder === "undefined" ||
       !navigator.mediaDevices?.getUserMedia
@@ -767,8 +821,13 @@ export function VoiceCoachSession() {
     setVoicePhase(null);
   }
 
-  async function submitTurn(userText: string) {
-    if (!userText || isTurnLoading) return;
+  async function submitTurn(userText: string, supportMode: "normal" | "simpler" | "example" = "normal") {
+    if (!userText || busyRef.current || !mountedRef.current) return;
+    busyRef.current = true;
+    const generation = generationRef.current;
+    stopSpeaking();
+    if (reviewData) sessionIdRef.current = crypto.randomUUID();
+    setReviewSaved(false);
 
     const nextMessages: CoachMessage[] = [
       ...messages,
@@ -779,6 +838,7 @@ export function VoiceCoachSession() {
     setDraft("");
     setError(null);
     setReviewData(null);
+    setProgressReward(null);
     setIsTurnLoading(true);
     setVoicePhase("De coach denkt na...");
 
@@ -787,15 +847,18 @@ export function VoiceCoachSession() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
+        signal: AbortSignal.timeout(20000),
         body: JSON.stringify({
           mode: "turn",
           level: selectedScenario.level,
-          sector: sectorLabel,
+          sector: dutchSectorLabel,
           scenarioTitle: selectedScenario.title,
+          missionId: initialMission?.id,
           scenarioGoal: selectedScenario.goal,
           nativeLocale: locale,
           userText,
-          messages: nextMessages,
+          messages: nextMessages.slice(-20),
+          supportMode,
         }),
       });
       const raw = await response.text();
@@ -803,10 +866,13 @@ export function VoiceCoachSession() {
       if (!response.ok || !json?.ok || !json?.data) {
         throw new Error(json?.error ?? "Could not send coach turn.");
       }
+      if (generation !== generationRef.current) return;
 
       const data = json.data as CoachTurnResponse;
       setTurnData(data);
-      const coachText = `${data.coachReply} ${data.nextQuestion}`.trim();
+      const correction = data.hasCorrection && data.betterSentence
+        ? ` Je kunt zeggen: "${data.betterSentence}".` : "";
+      const coachText = `${data.coachReply}${correction} ${data.nextQuestion}`.trim();
       setMessages((prev) => [
         ...prev,
         {
@@ -815,7 +881,7 @@ export function VoiceCoachSession() {
         },
       ]);
       if (autoSpeak && voiceSupported) {
-        void speakText(coachText);
+        void speakText(coachText.slice(0, 850));
         continueHandsFreeLoop();
       } else if (handsFreeMode) {
         setVoicePhase(null);
@@ -824,12 +890,18 @@ export function VoiceCoachSession() {
         setVoicePhase(null);
       }
     } catch (err) {
+      if (generation !== generationRef.current) return;
       setVoicePhase(null);
       setError(err instanceof Error ? err.message : "Could not send coach turn.");
     } finally {
-      setIsTurnLoading(false);
+      if (generation === generationRef.current) {
+        busyRef.current = false;
+        setIsTurnLoading(false);
+      }
     }
   }
+  startListeningRef.current = startListening;
+  submitRef.current = submitTurn;
 
   async function sendTurn() {
     const userText = draft.trim();
@@ -837,7 +909,11 @@ export function VoiceCoachSession() {
   }
 
   async function finishSession() {
-    if (isReviewLoading || messages.length < 2) return;
+    if (isReviewLoading || busyRef.current || messages.length < 2) return;
+    busyRef.current = true;
+    stopListening(true);
+    stopSpeaking();
+    const generation = generationRef.current;
 
     setError(null);
     setIsReviewLoading(true);
@@ -846,79 +922,104 @@ export function VoiceCoachSession() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
+        signal: AbortSignal.timeout(25000),
         body: JSON.stringify({
           mode: "review",
           level: selectedScenario.level,
-          sector: sectorLabel,
+          sector: dutchSectorLabel,
           scenarioTitle: selectedScenario.title,
+          missionId: initialMission?.id,
           nativeLocale: locale,
-          messages,
+          messages: messages.slice(-30),
+          saveProgress,
+          sessionId: sessionIdRef.current,
         }),
       });
       const json = await response.json();
       if (!response.ok || !json?.ok || !json?.data) {
         throw new Error(json?.error ?? "Could not build session review.");
       }
-      setReviewData(json.data as CoachReviewResponse);
+      if (generation === generationRef.current) {
+        setReviewData(json.data as CoachReviewResponse);
+        setProgressReward((json.progress as CoachProgressReward | undefined) ?? null);
+        setReviewSaved(saveProgress);
+        if (saveProgress) router.refresh();
+      }
     } catch (err) {
+      if (generation !== generationRef.current) return;
       setError(
         err instanceof Error ? err.message : "Could not build session review.",
       );
     } finally {
-      setIsReviewLoading(false);
+      if (generation === generationRef.current) {
+        busyRef.current = false;
+        setIsReviewLoading(false);
+      }
     }
   }
 
   return (
-    <Card ref={rootRef} id="voice-coach-session" className="overflow-hidden">
+    <Card ref={rootRef} id="voice-coach-session" className="learning-session overflow-hidden border-white/10 shadow-2xl">
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <CardTitle>{ui.title}</CardTitle>
-            <p className="mt-1 text-sm leading-6 text-cozy-ink/70">
+            <p className="mt-1 text-sm leading-6 text-white/70">
               {ui.subtitle}
             </p>
           </div>
-          <Badge variant="outline">MVP loop</Badge>
+          <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl p-4 shadow-lg">
+            <h3 className="font-bold text-white">Sessie opties</h3>
+            <div className="mt-4 space-y-4">
+              <label className="block text-sm font-semibold text-white/80">Taalniveau AI
+                <select aria-label="Mijn oefenniveau" className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 p-2 text-white" value={level}
+                  onChange={(event) => setLevel(event.target.value as "A1" | "A2" | "B1")} disabled={listening || speaking}>
+                  <option value="A1" className="bg-black text-white">A1</option>
+                  <option value="A2" className="bg-black text-white">A2</option>
+                  <option value="B1" className="bg-black text-white">B1</option>
+                </select>
+              </label>
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-4">
-          <div className="rounded-[1.4rem] border border-cozy-sand/35 bg-white/80 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-cozy-ink/45">
+          <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl p-4 shadow-lg">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
               {ui.labels.scenario}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {translatedScenarios.map((scenario) => (
+              {scenarios.map((scenario, index) => (
                 <button
                   key={scenario.id}
                   type="button"
                   onClick={() => setSelectedId(scenario.id)}
-                  className={`rounded-full border px-3 py-2 text-left text-sm font-semibold transition ${
+                  disabled={isTurnLoading || listening || isReviewLoading}
+                  aria-pressed={selectedId === scenario.id}
+                  className={`rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
                     selectedId === scenario.id
-                      ? "border-cozy-teal/40 bg-cozy-teal/12 text-cozy-ink"
-                      : "border-cozy-sand/40 bg-white text-cozy-ink/80"
+                      ? "border-indigo-500/50 bg-indigo-500/20 text-white"
+                      : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
                   }`}
                 >
-                  {scenario.title}
+                  {translatedScenarios[index]?.title ?? scenario.title}
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-sm leading-6 text-cozy-ink/70">
-              {
-                translatedScenarios.find((item) => item.id === selectedId)?.goal
-              }
+            <p className="mt-3 text-sm leading-6 text-white/70">
+              {translatedScenarios[scenarios.findIndex((item) => item.id === selectedId)]?.goal}
             </p>
           </div>
 
-          <div className="rounded-[1.5rem] border border-cozy-sand/40 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,251,250,0.9))] p-4">
+          <div className="rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{selectedScenario.level}</Badge>
               <Badge variant="success">{sectorLabel}</Badge>
-              <Badge variant="outline">Ollama coach</Badge>
+              <Badge variant="outline">AI-taalcoach</Badge>
             </div>
 
-            <div className="space-y-3">
+            <div role="log" aria-label="Jouw gesprek" aria-live="polite" className="max-h-[420px] space-y-4 overflow-y-auto overscroll-contain py-2">
               {messages.map((message, index) => {
                 const assistant = message.role === "assistant";
                 return (
@@ -926,23 +1027,29 @@ export function VoiceCoachSession() {
                     key={`${message.role}-${index}-${message.content}`}
                     className={`max-w-[88%] rounded-[1.35rem] px-4 py-3 text-sm leading-6 ${
                       assistant
-                        ? "rounded-tl-sm bg-cozy-teal/12 text-cozy-ink"
-                        : "ml-auto rounded-tr-sm bg-[hsl(31_85%_88%)] text-cozy-ink"
+                        ? "rounded-tl-sm border border-indigo-400/20 bg-indigo-500/10 text-white"
+                        : "ml-auto rounded-tr-sm border border-fuchsia-400/20 bg-fuchsia-500/15 text-white"
                     }`}
                   >
-                    <div className="mb-1 text-[11px] font-black uppercase tracking-[0.18em] text-cozy-ink/45">
-                      {assistant ? "Coach" : "You"}
+                    <div className="mb-1 text-[11px] font-black uppercase tracking-[0.18em] text-white/45">
+                      {assistant ? "Coach" : "Jij"}
                     </div>
                     {message.content}
                   </div>
                 );
               })}
+              {isTurnLoading && <p role="status" className="flex items-center gap-2 p-3 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> Ik lees je antwoord...</p>}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+              <Button variant="outline" disabled={isTurnLoading || listening || isReviewLoading} onClick={() => void submitTurn("Ik begrijp de vraag niet.", "simpler")}>Leg het eenvoudiger uit</Button>
+              <Button variant="outline" disabled={isTurnLoading || listening || isReviewLoading} onClick={() => void submitTurn("Kun je een voorbeeld geven?", "example")}>Geef een voorbeeld</Button>
             </div>
           </div>
 
-          <div className="rounded-[1.4rem] border border-cozy-sand/35 bg-white/80 p-4">
+          <div className="rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-cozy-ink/45">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
                 {ui.labels.speech}
               </p>
               <Badge variant={speechSupported ? "success" : "warning"}>
@@ -955,13 +1062,13 @@ export function VoiceCoachSession() {
                   type="button"
                   variant="teal"
                   onClick={startListening}
-                  disabled={!speechSupported}
+                  disabled={!speechSupported || isTurnLoading || isReviewLoading}
                 >
                   <Mic className="h-4 w-4" />
                   {ui.actions.startMic}
                 </Button>
               ) : (
-                <Button type="button" variant="outline" onClick={() => stopListening(true)}>
+                <Button type="button" variant="outline" onClick={() => stopListening(false)}>
                   <Square className="h-4 w-4" />
                   {ui.actions.stopMic}
                 </Button>
@@ -983,19 +1090,20 @@ export function VoiceCoachSession() {
                 {handsFreeMode ? ui.actions.autoListenOn : ui.actions.autoListenOff}
               </Button>
             </div>
-            <p className="mt-3 text-sm leading-6 text-cozy-ink/70">
+            <p className="mt-3 text-sm leading-6 text-white/70">
               {ui.notes.autoListen}
             </p>
               {voicePhase && (
-                <p className="mt-2 text-sm font-medium text-cozy-teal">
+                <p className="mt-2 text-sm font-medium text-fuchsia-300">
                   {voicePhase}
                 </p>
               )}
           </div>
 
-          <div className="rounded-[1.4rem] border border-cozy-sand/35 bg-white/80 p-4">
+          <details className="rounded-xl border border-white/10 bg-black/40 p-4 text-white backdrop-blur-xl">
+            <summary className="cursor-pointer font-semibold text-white">Stem en luisteren</summary>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-cozy-ink/45">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
                 {ui.labels.voiceOutput}
               </p>
               <Badge variant={voiceSupported ? "success" : "warning"}>
@@ -1030,35 +1138,38 @@ export function VoiceCoachSession() {
                 {ui.actions.stopCoach}
               </Button>
             </div>
-            <div className="mt-3 rounded-2xl bg-[hsl(202_60%_96%)] p-4">
+            <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary">
                   <Sparkles className="h-3.5 w-3.5" />
                   {ui.labels.selectedVoice}
                 </Badge>
-                <span className="text-sm font-semibold text-cozy-ink">
+                <span className="text-sm font-semibold text-white">
                   {selectedVoiceLabel}
                 </span>
               </div>
-              <p className="mt-2 text-sm leading-6 text-cozy-ink/70">
+              <p className="mt-2 text-sm leading-6 text-white/70">
                 {ui.notes.voiceQuality}
               </p>
             </div>
-          </div>
+          </details>
 
-          <div className="rounded-[1.4rem] border border-cozy-sand/35 bg-white/80 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-cozy-ink/45">
+          <div className="rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
               {ui.labels.transcript}
             </p>
             <Textarea
               ref={textareaRef}
               value={draft}
+              aria-label="Jouw antwoord"
+              maxLength={500}
+              disabled={isTurnLoading || isReviewLoading || listening}
               onChange={(event) => setDraft(event.target.value)}
-              className="mt-3 min-h-[120px] rounded-2xl border-cozy-sand/40 bg-[hsl(202_60%_97%)]"
+              className="mt-3 min-h-[120px] rounded-lg border-white/10 bg-black/40 text-white"
               placeholder="Typ of spreek hier je antwoord in het Nederlands..."
             />
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button onClick={sendTurn} disabled={!draft.trim() || isTurnLoading}>
+              <Button onClick={sendTurn} disabled={!draft.trim() || isTurnLoading || isReviewLoading || listening}>
                 {isTurnLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -1070,7 +1181,7 @@ export function VoiceCoachSession() {
                 type="button"
                 variant="outline"
                 onClick={finishSession}
-                disabled={messages.length < 2 || isReviewLoading}
+                disabled={messages.length < 2 || isReviewLoading || isTurnLoading || listening}
               >
                 {isReviewLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1088,6 +1199,10 @@ export function VoiceCoachSession() {
                 {ui.actions.reset}
               </Button>
             </div>
+            <label className="mt-4 flex items-start gap-3 text-sm leading-6 text-white/75">
+              <input type="checkbox" className="mt-1 h-4 w-4 accent-fuchsia-500" checked={saveProgress} disabled={isReviewLoading} onChange={(event) => setSaveProgress(event.target.checked)} />
+              Bewaar mijn gesprek en voortgang. Alleen dan tellen de missie, XP, streak en skill-activiteit mee. Audio wordt nooit bewaard.
+            </label>
             {error && (
               <p className="mt-3 text-sm font-medium text-cozy-terracotta">
                 {error}
@@ -1102,32 +1217,32 @@ export function VoiceCoachSession() {
               <CardTitle className="text-base">{ui.labels.feedback}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="rounded-2xl bg-[hsl(202_60%_96%)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-cozy-ink/45">
-                  Better sentence
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
+                  {turnData?.hasCorrection ? "Zo kun je het zeggen" : "Jouw volgende stap"}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-cozy-ink">
-                  {turnData?.betterSentence ?? "Nog geen beurt verzonden."}
+                <p className="mt-2 text-sm leading-6 text-white">
+                  {turnData?.betterSentence || turnData?.nextQuestion || "Geef eerst een antwoord. Je krijgt daarna een kleine tip."}
                 </p>
               </div>
-              <div className="rounded-2xl bg-[hsl(202_60%_96%)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-cozy-ink/45">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
                   Tip
                 </p>
-                <p className="mt-2 text-sm leading-6 text-cozy-ink">
+                <p className="mt-2 text-sm leading-6 text-white">
                   {turnData?.tip ?? "De coach geeft hier na je beurt een korte tip."}
                 </p>
               </div>
-              <div className="rounded-2xl bg-[hsl(202_60%_96%)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-cozy-ink/45">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
                   Focus
                 </p>
-                <p className="mt-2 text-sm leading-6 text-cozy-ink">
+                <p className="mt-2 text-sm leading-6 text-white">
                   {turnData?.detectedFocus ?? "Kies een scenario en stuur je eerste antwoord."}
                 </p>
               </div>
-              <p className="text-sm leading-6 text-cozy-ink/70">
-                {ui.notes.ollamaFallback}
+              <p className="text-sm leading-6 text-white/70">
+                {turnData?.meta.usedFallback ? "De AI is even niet beschikbaar. Je ziet vaste oefenhulp, geen beoordeling van jouw Nederlands." : ui.notes.ollamaFallback}
               </p>
             </CardContent>
           </Card>
@@ -1141,7 +1256,7 @@ export function VoiceCoachSession() {
                 turnData?.vocabulary.map((item) => (
                   <div
                     key={`${item.word}-${item.meaning}`}
-                    className="rounded-2xl border border-cozy-sand/35 bg-white/80 p-4"
+                    className="rounded-lg border border-white/10 bg-white/5 p-4"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="sunset">{item.word}</Badge>
@@ -1150,9 +1265,9 @@ export function VoiceCoachSession() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm leading-6 text-cozy-ink/70">
-                  Na je beurt verschijnen hier woorden die we later in practice
-                  of flashcards kunnen herhalen.
+                <p className="text-sm leading-6 text-white/70">
+                  Na je antwoord zie je hier woorden voor jouw opleiding.
+                  Lees ze en probeer er zelf een zin mee te maken.
                 </p>
               )}
             </CardContent>
@@ -1161,33 +1276,72 @@ export function VoiceCoachSession() {
           {reviewData && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">{ui.labels.review}</CardTitle>
+                <CardTitle className="text-base">{ui.labels.review} {reviewSaved ? "· Bewaard" : ""}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-2xl bg-[hsl(202_60%_96%)] p-4 text-sm leading-6 text-cozy-ink">
-                  {reviewData.summary}
-                </div>
-                <div className="space-y-2">
-                  {reviewData.strengths.map((item) => (
-                    <div key={item} className="rounded-2xl bg-white/80 p-3 text-sm text-cozy-ink/80">
-                      {item}
+                {progressReward && (
+                  <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4 text-white">
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-400/15 text-emerald-200">
+                        <Trophy size={20} />
+                      </span>
+                      <div>
+                        <p className="font-bold">
+                          {progressReward.alreadySaved
+                            ? "Deze missie was al bewaard"
+                            : `+${progressReward.xpEarned} XP verdiend`}
+                        </p>
+                        <p className="text-sm text-white/65">
+                          Level {progressReward.level}
+                          {progressReward.leveledUp ? " · Nieuw level bereikt" : " · Je journey is bijgewerkt"}
+                        </p>
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                )}
+                {reviewData.meta.usedFallback && (
+                  <p className="text-sm text-white/60">De AI kon geen terugblik maken. Hieronder zie je jouw oefenactiviteit en vaste oefentips, geen taalbeoordeling.</p>
+                )}
+                <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl p-4 shadow-lg">
+                  <h3 className="mb-2 flex items-center gap-2 font-bold text-white"><Sparkles className="h-5 w-5 text-fuchsia-400" /> Over jouw gesprek</h3>
+                  <p className="text-sm leading-6 text-white/70">{reviewData.summary}</p>
                 </div>
-                <div className="space-y-2">
-                  {reviewData.focusPoints.map((item) => (
-                    <div key={item} className="rounded-2xl bg-white/80 p-3 text-sm text-cozy-ink/80">
-                      {item}
-                    </div>
-                  ))}
-                </div>
-                <div className="space-y-2">
-                  {reviewData.microLessons.map((item) => (
-                    <div key={item} className="rounded-2xl border border-cozy-sand/35 bg-white/80 p-3 text-sm text-cozy-ink/80">
-                      {item}
-                    </div>
-                  ))}
-                </div>
+                {reviewData.strengths.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-indigo-300">Sterke punten</h4>
+                    {reviewData.strengths.map((item) => (
+                      <div key={item} className="rounded-xl border border-white/10 bg-indigo-500/10 p-3 text-sm text-white shadow-lg">
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {reviewData.focusPoints.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-fuchsia-400">Wat kun je de volgende keer doen?</h4>
+                    {reviewData.focusPoints.map((item) => (
+                      <div key={item} className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl p-3 text-sm text-white/80 shadow-lg">
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {reviewData.microLessons.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-fuchsia-400">Micro-lessen</h4>
+                    {reviewData.microLessons.map((item) => (
+                      <div key={item} className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl p-3 text-sm text-white/80 shadow-lg">
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Link
+                  href="/missions"
+                  className="inline-flex items-center gap-2 text-sm font-bold text-fuchsia-300 hover:text-fuchsia-200"
+                >
+                  Kies je volgende missie
+                </Link>
               </CardContent>
             </Card>
           )}

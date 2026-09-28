@@ -18,6 +18,9 @@ type Ctx = {
   locale: Locale;
   setLocale: (loc: Locale) => void;
   t: Dict;
+  beginTranslation: () => void;
+  endTranslation: () => void;
+  isTranslating: boolean;
   /**
    * `true` als de UI de Nederlandse bron-referentie MOET tonen naast de vertaling.
    * - false voor `nl` (NL is de brontaal, geen referentie nodig)
@@ -67,6 +70,15 @@ export function LocaleProvider({
   const [t, setT] = useState<Dict>(() =>
     getDictionary(initialLocale ?? DEFAULT_LOCALE),
   );
+  const [pendingTranslations, setPendingTranslations] = useState(0);
+
+  const beginTranslation = useCallback(() => {
+    setPendingTranslations((count) => count + 1);
+  }, []);
+
+  const endTranslation = useCallback(() => {
+    setPendingTranslations((count) => Math.max(0, count - 1));
+  }, []);
 
   useEffect(() => {
     if (initialLocale) return;
@@ -100,6 +112,7 @@ export function LocaleProvider({
     }
 
     setT(getDictionary("en"));
+    beginTranslation();
 
     fetch(
       `/api/i18n?locale=${encodeURIComponent(locale)}&v=${I18N_FETCH_VERSION}`,
@@ -111,24 +124,50 @@ export function LocaleProvider({
         if (!j || j.ok !== true || !j.templates) return;
         setT(buildDictFromTemplates(j.templates));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(endTranslation);
 
     return () => {
       active = false;
     };
-  }, [locale]);
+  }, [beginTranslation, endTranslation, locale]);
 
   const value = useMemo<Ctx>(() => {
     return {
       locale,
       setLocale,
       t,
+      beginTranslation,
+      endTranslation,
+      isTranslating: pendingTranslations > 0,
       showNlRef: locale !== "nl",
     };
-  }, [locale, setLocale, t]);
+  }, [
+    beginTranslation,
+    endTranslation,
+    locale,
+    pendingTranslations,
+    setLocale,
+    t,
+  ]);
 
   return (
-    <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
+    <LocaleContext.Provider value={value}>
+      {children}
+      {pendingTranslations > 0 && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed left-1/2 top-4 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-full border border-cozy-sand/70 bg-white/90 px-4 py-2 text-sm font-bold text-cozy-ink shadow-lg backdrop-blur-xl"
+        >
+          <span
+            aria-hidden="true"
+            className="h-4 w-4 animate-spin rounded-full border-2 border-cozy-teal/25 border-t-cozy-teal"
+          />
+          Bezig met vertalen...
+        </div>
+      )}
+    </LocaleContext.Provider>
   );
 }
 
@@ -139,6 +178,9 @@ export function useLocale() {
       locale: DEFAULT_LOCALE as Locale,
       setLocale: () => {},
       t: getDictionary(DEFAULT_LOCALE),
+      beginTranslation: () => {},
+      endTranslation: () => {},
+      isTranslating: false,
       showNlRef: false,
     };
   }

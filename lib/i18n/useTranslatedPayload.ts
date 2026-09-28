@@ -7,8 +7,11 @@ type Options = {
   source?: string;
 };
 
+const translatedPayloadCache = new Map<string, unknown>();
+const pendingTranslations = new Map<string, Promise<unknown>>();
+
 export function useTranslatedPayload<T>(payload: T, options: Options = {}) {
-  const { locale } = useLocale();
+  const { beginTranslation, endTranslation, locale } = useLocale();
   const [translated, setTranslated] = useState<T>(payload);
 
   const serialized = useMemo(() => JSON.stringify(payload), [payload]);
@@ -25,21 +28,48 @@ export function useTranslatedPayload<T>(payload: T, options: Options = {}) {
 
     setTranslated(payload);
 
-    fetch(`/api/i18n?v=content-v1`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-      body: JSON.stringify({
-        locale,
-        payload,
-        source: options.source ?? "auto",
-      }),
-    })
-      .then((r) => r.json())
+    const source = options.source ?? "auto";
+    const cacheKey = `${locale}:${source}:${serialized}`;
+    const cached = translatedPayloadCache.get(cacheKey);
+    if (cached !== undefined) {
+      setTranslated(cached as T);
+      return () => {
+        active = false;
+      };
+    }
+
+    let request = pendingTranslations.get(cacheKey);
+    if (!request) {
+      beginTranslation();
+      request = fetch(`/api/i18n?v=content-v1`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          locale,
+          payload,
+          source,
+        }),
+      })
+        .then((r) => r.json())
+        .then((json) => {
+          if (!json || json.ok !== true || !("payload" in json)) {
+            return payload;
+          }
+          translatedPayloadCache.set(cacheKey, json.payload);
+          return json.payload;
+        })
+        .finally(() => {
+          pendingTranslations.delete(cacheKey);
+          endTranslation();
+        });
+      pendingTranslations.set(cacheKey, request);
+    }
+
+    request
       .then((json) => {
         if (!active) return;
-        if (!json || json.ok !== true || !("payload" in json)) return;
-        setTranslated(json.payload as T);
+        setTranslated(json as T);
       })
       .catch(() => {
         if (!active) return;
@@ -49,7 +79,7 @@ export function useTranslatedPayload<T>(payload: T, options: Options = {}) {
     return () => {
       active = false;
     };
-  }, [locale, options.source, serialized]);
+  }, [beginTranslation, endTranslation, locale, options.source, serialized]);
 
   return translated;
 }

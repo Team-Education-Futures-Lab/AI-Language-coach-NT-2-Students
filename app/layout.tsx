@@ -58,8 +58,8 @@ export default function RootLayout({
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          enableSystem
+          defaultTheme="dark"
+          forcedTheme="dark"
           disableTransitionOnChange
         >
           {children}

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { runtime, transcribeWithVoiceRuntime } from "@/lib/voice/runtime-client";
+import { transcribeWithVoiceRuntime } from "@/lib/voice/runtime-client";
 
-export { runtime };
+export const runtime = "nodejs";
 
 function isFileLike(
   value: FormDataEntryValue | null,

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db/prisma";
 import { LessonDetailClient } from "@/components/features/lessons/LessonDetailClient";
+import { getCurrentUser } from "@/auth";
+import { canReadLesson } from "@/lib/auth/lesson-access";
 
 export const metadata: Metadata = {
   title: "Les",
@@ -12,16 +14,17 @@ export default async function LessonDetailPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
+  const user = await getCurrentUser();
   const lesson = await db.lesson.findUnique({
     where: { id },
     include: {
       exercises: {
-        orderBy: [{ difficulty: "asc" }, { createdAt: "asc" }],
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
       },
     },
   });
 
-  if (!lesson) notFound();
+  if (!lesson || !canReadLesson(user, lesson)) notFound();
 
   const totalXp = lesson.exercises.reduce((acc, e) => acc + e.xpReward, 0);
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { runtime, synthesizeWithVoiceRuntime } from "@/lib/voice/runtime-client";
+import { synthesizeWithVoiceRuntime } from "@/lib/voice/runtime-client";
 
-export { runtime };
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const session = await auth();

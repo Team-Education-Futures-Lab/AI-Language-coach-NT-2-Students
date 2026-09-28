@@ -208,17 +208,61 @@ function TagListField({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="flex items-center gap-1">
-            <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+          <FormLabel className="flex items-center gap-1 text-white">
+            <Tag className="h-3.5 w-3.5 text-white/50" />
             {label}
           </FormLabel>
+          {name === "interests" && (
+            <div className="flex flex-wrap gap-2">
+              {[
+                "Games",
+                "Voetbal",
+                "Muziek",
+                "Films",
+                "Koken",
+                "Technologie",
+                "Auto's",
+                "Reizen",
+                "Fashion",
+              ].map((interest) => {
+                const selected = (field.value ?? []).some(
+                  (value: string) =>
+                    value.toLowerCase() === interest.toLowerCase(),
+                );
+                return (
+                  <button
+                    key={interest}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() =>
+                      field.onChange(
+                        selected
+                          ? field.value.filter(
+                              (value: string) =>
+                                value.toLowerCase() !== interest.toLowerCase(),
+                            )
+                          : [...(field.value ?? []), interest],
+                      )
+                    }
+                    className={`rounded-md border px-3 py-1.5 text-sm transition ${
+                      selected
+                        ? "border-fuchsia-400/40 bg-fuchsia-500/15 text-white"
+                        : "border-white/10 bg-white/5 text-white/60 hover:text-white"
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <TagEditor
             values={field.value ?? []}
             onChange={field.onChange}
             placeholder={placeholder}
             name={name}
           />
-          {description && <FormDescription>{description}</FormDescription>}
+          {description && <FormDescription className="text-white/60">{description}</FormDescription>}
           <FormMessage />
         </FormItem>
       )}
