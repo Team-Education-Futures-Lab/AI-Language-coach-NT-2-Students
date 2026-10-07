@@ -15,8 +15,8 @@ NT2-leeromgeving met vaste oefeningen, taalspellen, een persoonlijke leerroute, 
 
 Maak een afzonderlijk gratis project voor deze demo. Gebruik geen database met echte leerlinggegevens als testdatabase.
 
-- Database: neem de **Transaction pooler**-URL met poort 6543 over als `DATABASE_URL`; vul het databasewachtwoord in (URL-encode speciale tekens).
-- API: `NEXT_PUBLIC_SUPABASE_URL` en `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` komen uit de projectinstellingen. Deze twee waarden mogen in de browser; de database-URL nooit.
+- Database: neem de **Transaction pooler**-URL met poort 6543 over als `DATABASE_URL`; laat het wachtwoord uit de URL en zet het ongewijzigd in de afzonderlijke geheime variabele `DATABASE_PASSWORD`.
+- API: `NEXT_PUBLIC_SUPABASE_URL` en `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` komen uit de projectinstellingen. Deze twee waarden mogen in de browser; het databasewachtwoord nooit.
 - Voer `supabase/migrations/202610070001_platform.sql` uit via de SQL-editor of `npm run db:supabase`.
 - Auth: laat e-mail/wachtwoord en e-mailbevestiging ingeschakeld. Stel de Site URL in op de Vercel-demo-URL en voeg exact `https://DEMO_HOST/auth/callback` toe aan Redirect URLs.
 - Optioneel: schakel Anonymous Sign-Ins in en zet `NEXT_PUBLIC_ENABLE_DEMO_AUTH=true` voor een gastdemo met een afzonderlijke Supabase-identiteit per bezoeker. De gast verliest toegang tot zijn voortgang na uitloggen; gebruik fictieve gegevens. Zet voor een bredere publieke uitrol CAPTCHA en passende rate limits aan.

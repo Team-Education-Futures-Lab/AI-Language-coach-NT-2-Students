@@ -4,7 +4,7 @@ type Row=Record<string,unknown>;
 let connection:ReturnType<typeof postgres>|undefined;
 function sql(){
  if(!process.env.DATABASE_URL)throw new Error('Database is nog niet geconfigureerd.');
- return connection??=postgres(process.env.DATABASE_URL,{prepare:false,max:3,idle_timeout:20,connect_timeout:10,ssl:'require'});
+ return connection??=postgres(process.env.DATABASE_URL,{password:process.env.DATABASE_PASSWORD,prepare:false,max:3,idle_timeout:20,connect_timeout:10,ssl:'require'});
 }
 // Only server-owned SQL reaches this adapter. Values always stay bound parameters.
 export class Statement{
