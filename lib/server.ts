@@ -1,19 +1,26 @@
-import {env} from 'cloudflare:workers';
-export function database(){const db=(env as unknown as {DB:D1Database}).DB;if(!db)throw new Error('Opslag is tijdelijk niet beschikbaar');return db;}
-export function identity(r:Request){return r.headers.get('oai-authenticated-user-id');}
-export function identityEmail(r:Request){return r.headers.get('oai-authenticated-user-email')||'';}
-export function identityName(r:Request){return r.headers.get('oai-authenticated-user-full-name')||identityEmail(r)||'Onbekende gebruiker';}
+import 'server-only';
+import {authenticatedUser} from './auth';
+import {database} from './database';
+export {database};
+export async function identity(r:Request){
+ if(!['GET','HEAD','OPTIONS'].includes(r.method)){
+  const origin=r.headers.get('origin');
+  if(origin&&origin!==new URL(r.url).origin)return null;
+ }
+ return (await authenticatedUser())?.id??null;
+}
 export type UserRole='teacher_admin'|'student';
 export async function currentUser(r:Request){
-  const id=identity(r);if(!id)return null;
-  const email=identityEmail(r),name=identityName(r),now=new Date().toISOString(),db=database();
-  const configured=String((env as unknown as {TEACHER_ADMIN_EMAILS?:string}).TEACHER_ADMIN_EMAILS||'').split(',').map(v=>v.trim().toLowerCase()).filter(Boolean);
-  const role:UserRole=configured.includes(email.toLowerCase())||(email.endsWith('@sites.test')&&email==='seedy@sites.test')?'teacher_admin':'student';
-  await db.prepare('INSERT OR IGNORE INTO users (id,email,display_name,role,created_at,updated_at) VALUES (?,?,?,?,?,?)').bind(id,email,name,role,now,now).run();
-  await db.prepare("UPDATE users SET email=?,display_name=?,updated_at=? WHERE id=? AND role<>'teacher_admin'").bind(email,name,now,id).run();
-  const row=await db.prepare('SELECT id,email,display_name,role FROM users WHERE id=?').bind(id).first<{id:string;email:string;display_name:string;role:UserRole}>();
-  return row||{id,email,display_name:name,role};
+ const id=await identity(r);if(!id)return null;
+ const auth=await authenticatedUser();if(!auth)return null;
+ const email=(auth.email||`${id}@demo.invalid`).toLowerCase(),name=String(auth.user_metadata?.full_name||auth.email||'Demoleerling').slice(0,160),now=new Date().toISOString(),db=database();
+ const configured=(process.env.TEACHER_ADMIN_EMAILS||'').split(',').map(v=>v.trim().toLowerCase()).filter(Boolean);
+ // Never trust a client-provided role or unverified email.
+ const role:UserRole=!auth.is_anonymous&&!!auth.email_confirmed_at&&configured.includes(email)?'teacher_admin':'student';
+ await db.prepare('INSERT INTO users (id,email,display_name,role,created_at,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email,display_name=excluded.display_name,role=excluded.role,updated_at=excluded.updated_at').bind(id,email,name,role,now,now).run();
+ return {id,email,display_name:name,role};
 }
 export async function requireTeacher(r:Request){const user=await currentUser(r);if(!user)return {error:fail('Log in om het docentbeheer te openen.',401)};if(user.role!=='teacher_admin')return {error:fail('Dit onderdeel is alleen beschikbaar voor docenten.',403)};return {user};}
-export function apiKey(){return (env as unknown as {OPENAI_API_KEY?:string}).OPENAI_API_KEY;}
+// This free demo never enables billable model requests, even if a key is present.
+export function apiKey():string|undefined{return undefined;}
 export function fail(message:string,status=400){return Response.json({error:message},{status});}

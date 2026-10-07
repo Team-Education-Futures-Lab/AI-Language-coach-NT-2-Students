@@ -15,8 +15,7 @@ export function startLocalAI(){
   const gpu=(navigator as Navigator&{gpu?:{requestAdapter:()=>Promise<any>}}).gpu;
   if(!gpu||!await gpu.requestAdapter())throw Error('Deze browser kan lokale AI niet uitvoeren. Open de site in een recente Chrome of Edge op een computer met grafische versnelling. De vaste oefenhints blijven beschikbaar.');
   const {CreateWebWorkerMLCEngine}=await import('@mlc-ai/web-llm');
-  const {default:AIWorker}=await import('./ai-worker.ts?worker');
-  worker=new AIWorker();
+  worker=new Worker(new URL('./ai-worker.ts',import.meta.url),{type:'module'});
   engine=await CreateWebWorkerMLCEngine(worker,'Qwen3.5-4B-q4f16_1-MLC',{initProgressCallback:p=>update({progress:Math.max(0,Math.min(1,p.progress))})},{context_window_size:4096});
   update({status:'ready',progress:1});
  })().catch(e=>{console.error('De AI-coach model load failed:',e);worker?.terminate();worker=null;engine=null;update({status:'error',error:e instanceof Error&&e.message.startsWith('Deze browser')?e.message:'De AI-coach kon het taalmodel niet laden. Controleer je verbinding en beschikbare opslag, en probeer opnieuw in Chrome of Edge.'});throw e}).finally(()=>{loading=null});
@@ -45,5 +44,3 @@ export function localCompletion(messages:AIMessage[],options:{maxTokens?:number;
  };
  const result=sequence.then(task,task);sequence=result.catch(()=>{});return result;
 }
-
-if(import.meta.hot)import.meta.hot.dispose(()=>{worker?.terminate();worker=null;engine=null});

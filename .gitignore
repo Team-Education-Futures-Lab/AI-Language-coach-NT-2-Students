@@ -47,3 +47,5 @@ next-env.d.ts
 
 # Rebuilt from the pinned speech dependency before dev/build.
 /public/vendor/speech/
+
+!.env.example

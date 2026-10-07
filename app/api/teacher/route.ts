@@ -37,8 +37,8 @@ export async function POST(r:Request){
       const classroom=await db.prepare('SELECT id FROM classrooms WHERE id=? AND teacher_id=?').bind(body.classroomId,auth.user.id).first();if(!classroom)return fail('Klas niet gevonden.',404);
       const email=body.studentEmail.trim().toLowerCase();if(!email.includes('@'))return fail('Gebruik een geldig e-mailadres.');
       const student=await db.prepare('SELECT id FROM users WHERE email=? AND role=?').bind(email,'student').first<{id:string}>();
-      if(!student)return fail('Deze student heeft nog geen account. Laat de student eerst lokaal inloggen.');
-      await db.prepare('INSERT OR IGNORE INTO classroom_members (classroom_id,student_id,joined_at) VALUES (?,?,?)').bind(body.classroomId,student.id,now).run();
+      if(!student)return fail('Deze student heeft nog geen account. Laat de student eerst inloggen.');
+      await db.prepare('INSERT INTO classroom_members (classroom_id,student_id,joined_at) VALUES (?,?,?) ON CONFLICT DO NOTHING').bind(body.classroomId,student.id,now).run();
     }else if(body.action==='student_remove'){
       if(typeof body.classroomId!=='string'||typeof body.studentId!=='string')return fail('Ongeldige studentkoppeling.');
       await db.prepare('DELETE FROM classroom_members WHERE classroom_id=? AND student_id=? AND classroom_id IN (SELECT id FROM classrooms WHERE id=? AND teacher_id=?)').bind(body.classroomId,body.studentId,body.classroomId,auth.user.id).run();

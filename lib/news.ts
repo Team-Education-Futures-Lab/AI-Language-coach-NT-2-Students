@@ -31,7 +31,7 @@ export async function refreshNews(){
    if(Date.parse(a.published_at)<Date.now()-14*86400000||Date.parse(a.published_at)>Date.now()+86400000)continue;
    const id=field+'|'+a.url;
    if(await db.prepare('SELECT id FROM news WHERE id=?').bind(id).first())continue;
-   const save=db.prepare('INSERT OR IGNORE INTO news(id,field,title,url,source,published_at,selected_at,week) VALUES(?,?,?,?,?,?,?,?)').bind(id,field,a.title,a.url,a.source,new Date(a.published_at).toISOString(),new Date().toISOString(),week);
+   const save=db.prepare('INSERT INTO news(id,field,title,url,source,published_at,selected_at,week) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING').bind(id,field,a.title,a.url,a.source,new Date(a.published_at).toISOString(),new Date().toISOString(),week);
    // Replace an incorrectly classified automatic selection atomically.
    if(existing)await db.batch([db.prepare('DELETE FROM news WHERE id=? AND week=?').bind(existing.id,week),save]);else await save.run();
    inserted++;chosen=true;break;

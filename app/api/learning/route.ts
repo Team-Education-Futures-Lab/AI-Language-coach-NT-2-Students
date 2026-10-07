@@ -15,9 +15,9 @@ async function readState(u:string):Promise<LearningState>{
  const assessment:Assessment|null=checks?JSON.parse(checks.data):null,ev:Evidence[]=evidence.results.map(e=>JSON.parse(e.data));
  return{plan:state?.plan?JSON.parse(state.plan):null,draft:state?.draft?JSON.parse(state.draft):null,entries:entries.results.map(e=>({...JSON.parse(e.data),updatedAt:e.updated_at})),assessment,evidence:ev,advice:adaptiveAdvice(assessment,ev)};
 }
-export async function GET(r:Request){const u=identity(r);if(!u)return fail('Log in om je leerroute te bekijken.',401);try{return Response.json(await readState(u))}catch(e){console.error('learning-read',e);return fail('Je leerroute kon niet worden geladen. Probeer opnieuw.',503)}}
+export async function GET(r:Request){const u=await identity(r);if(!u)return fail('Log in om je leerroute te bekijken.',401);try{return Response.json(await readState(u))}catch(e){console.error('learning-read',e);return fail('Je leerroute kon niet worden geladen. Probeer opnieuw.',503)}}
 export async function POST(r:Request){
- const u=identity(r);if(!u)return fail('Log in om je leerwerk te bewaren.',401);
+ const u=await identity(r);if(!u)return fail('Log in om je leerwerk te bewaren.',401);
  let b:any;try{const body=await r.text();if(body.length>300000)return fail('Je werk is te groot om op te slaan.');b=JSON.parse(body)}catch{return fail('Ongeldige invoer.')}
  if(!b||typeof b!=='object'||Array.isArray(b))return fail('Ongeldige invoer.');
  const now=new Date().toISOString();
@@ -30,7 +30,7 @@ export async function POST(r:Request){
   const p=entrySchema.safeParse(b.entry);if(!p.success)return fail('Controleer je tekst en tekening. Je invoer blijft staan.');const entry=p.data;
   if(entry.completed&&(entry.text.trim().split(/\s+/).length<15||entry.reflection.trim().length<10||entry.nextStep.trim().length<5))return fail('Schrijf minstens 15 woorden, een korte terugblik en je volgende stap.');
   const statements=[db.prepare('INSERT INTO learning_entries(id,user_id,data,updated_at) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at WHERE learning_entries.user_id=excluded.user_id').bind(u+':'+entry.id,u,JSON.stringify(entry),now)];
-  if(entry.completed)statements.push(db.prepare('INSERT OR IGNORE INTO activities(id,user_id,kind,skill,xp,date,detail) VALUES(?,?,?,?,?,?,?)').bind(u+':atelier:'+entry.id,u,'atelier','Schrijven',20,now,JSON.stringify({title:entry.title})));
+  if(entry.completed)statements.push(db.prepare('INSERT INTO activities(id,user_id,kind,skill,xp,date,detail) VALUES(?,?,?,?,?,?,?) ON CONFLICT DO NOTHING').bind(u+':atelier:'+entry.id,u,'atelier','Schrijven',20,now,JSON.stringify({title:entry.title})));
   await db.batch(statements);
  }else if(b.action==='draft'||b.action==='assessment'){
   const finished=b.action==='assessment',p=b.input,answers=validateAnswers(p?.answers,finished);
@@ -41,7 +41,7 @@ export async function POST(r:Request){
   else{
    const assessment:Assessment={id:b.id,createdAt:now,input,result:assess(input)};
    await db.batch([
-    db.prepare('INSERT OR IGNORE INTO learning_assessments(id,user_id,data,created_at) VALUES(?,?,?,?)').bind(u+':'+b.id,u,JSON.stringify(assessment),now),
+    db.prepare('INSERT INTO learning_assessments(id,user_id,data,created_at) VALUES(?,?,?,?) ON CONFLICT DO NOTHING').bind(u+':'+b.id,u,JSON.stringify(assessment),now),
     db.prepare('INSERT INTO learning_state(user_id,draft,updated_at) VALUES(?,NULL,?) ON CONFLICT(user_id) DO UPDATE SET draft=NULL,updated_at=excluded.updated_at').bind(u,now)
    ]);
   }
