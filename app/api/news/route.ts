@@ -1,0 +1,4 @@
+import {database,identity,fail} from '@/lib/server';
+import {fields} from '@/lib/profile';
+import {refreshNews,weekKey} from '@/lib/news';
+export async function GET(r:Request){if(!identity(r))return fail('Log in om je vaknieuws te lezen.',401);try{const field=new URL(r.url).searchParams.get('field')||fields[0];if(!fields.includes(field))return fail('Onbekend vakgebied');let warning='';const current=await database().prepare('SELECT id FROM news WHERE field=? AND week=? LIMIT 1').bind(field,weekKey()).first();if(!current){try{await refreshNews()}catch{warning='Verversen is tijdelijk niet gelukt. Eerder geselecteerde artikelen blijven beschikbaar.';}}const rows=await database().prepare('SELECT * FROM news WHERE field=? ORDER BY week DESC LIMIT 8').bind(field).all();return Response.json({articles:rows.results,week:weekKey(),warning});}catch{return fail('Het nieuws kon niet worden geladen.',503)}}

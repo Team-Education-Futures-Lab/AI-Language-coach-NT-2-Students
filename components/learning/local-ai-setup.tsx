@@ -1,0 +1,6 @@
+'use client';
+import {useCoach} from '@/components/learning/coach-preferences';
+import {useSyncExternalStore} from 'react';
+import {startLocalAI,subscribeAI,getAIState,getServerAIState} from '@/lib/local-ai';
+export function useLocalAI(){return useSyncExternalStore(subscribeAI,getAIState,getServerAIState)}
+export function LocalAISetup(){const {text:coachText,coach}=useCoach();const ai=useLocalAI();if(ai.status==='ready')return <p className="pip-local-status">{coachText("Pip draait op dit apparaat · geen API-sleutel")}</p>;return <section className="pip-setup"><b>Een eigen taalmaatje op jouw apparaat</b><p>{coachText("Start Pip één keer. Je browser downloadt ongeveer 2,5 GB en bewaart het taalmodel voor later. De AI verwerkt je vragen op dit apparaat. Werkt in browsers met WebGPU, zoals recente Chrome en Edge.")}</p>{ai.status==='loading'?<div role="status"><progress value={ai.progress} max={1}/><span>{coachText("Pip wordt klaargezet… ")}{Math.round(ai.progress*100)}%</span></div>:<button className="primary-button" onClick={()=>{void startLocalAI().catch(()=>{})}}>{ai.status==='error'?'Opnieuw laden':coachText('Start Pip zonder sleutel')}</button>}{ai.error&&<p role="alert">{ai.error}</p>}</section>}

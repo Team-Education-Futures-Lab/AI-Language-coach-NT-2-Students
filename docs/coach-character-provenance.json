@@ -1,0 +1,19 @@
+{
+  "mode": "built-in image_gen",
+  "reference": "/Users/parsasiddighi/Documents/Codex/2026-10-06/new-chat/work/ai-taalcoach/public/mascot/pip-vos.png",
+  "transparent_background": true,
+  "requests": [
+    {
+      "name": "owl",
+      "prompt": "Use case: stylized-concept. Asset type: adult Dutch-learning app animal mascot. Input image: reference fox provided solely for visual style, pixel scale, shading, warmth, appealing expression, and full-body framing. Create a single new animal character in precisely this matching crisp polished pixel-art style. Square canvas, genuinely transparent background. Full-body front-facing animal, friendly expressive face, readable clear silhouette even at 54px, centered, nearly filling the canvas with a small safe transparent margin. Match reference's warm dimensional pixel shading, blocky pixel edges and dark pixel outlines. Natural animal body, no clothing. No text, letters, numbers, props, UI, robot, border, scenery, ground plane or cast shadow. One animal only. Subject: a friendly warm brown owl with cream facial discs, large amber eyes, small golden beak, feather ear tufts, folded wings and both feet visible"
+    },
+    {
+      "name": "cat",
+      "prompt": "Use case: stylized-concept. Asset type: adult Dutch-learning app animal mascot. Input image: reference fox provided solely for visual style, pixel scale, shading, warmth, appealing expression, and full-body framing. Create a single new animal character in precisely this matching crisp polished pixel-art style. Square canvas, genuinely transparent background. Full-body front-facing animal, friendly expressive face, readable clear silhouette even at 54px, centered, nearly filling the canvas with a small safe transparent margin. Match reference's warm dimensional pixel shading, blocky pixel edges and dark pixel outlines. Natural animal body, no clothing. No text, letters, numbers, props, UI, robot, border, scenery, ground plane or cast shadow. One animal only. Subject: a friendly soft gray tabby cat with cream muzzle and chest, large amber eyes, pointed ears, all paws visible and a gently curved tail"
+    },
+    {
+      "name": "panda",
+      "prompt": "Use case: stylized-concept. Asset type: adult Dutch-learning app animal mascot. Input image: reference fox provided solely for visual style, pixel scale, shading, warmth, appealing expression, and full-body framing. Create a single new animal character in precisely this matching crisp polished pixel-art style. Square canvas, genuinely transparent background. Full-body front-facing animal, friendly expressive face, readable clear silhouette even at 54px, centered, nearly filling the canvas with a small safe transparent margin. Match reference's warm dimensional pixel shading, blocky pixel edges and dark pixel outlines. Natural animal body, no clothing. No text, letters, numbers, props, UI, robot, border, scenery, ground plane or cast shadow. One animal only. Subject: a friendly black-and-cream giant panda with round ears, expressive warm dark eyes inside black eye patches, cream muzzle, and all paws visible"
+    }
+  ]
+}
