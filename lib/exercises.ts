@@ -1,7 +1,7 @@
 import {grammarExercises} from './grammar-exercises';
 export type Category='grammatica'|'spelling'|'lezen'|'luisteren'|'schrijven'|'formuleren';
 export type Question={prompt:string;options?:string[];correct?:number;accepted?:string[];explanation:string};
-export type Exercise={id:string;category:Category;level:'A1'|'A2'|'B1'|'B2';focus?:string;title:string;description:string;minutes:number;passage?:string;audio?:string;questions:Question[];writing?:{prompt:string;minWords:number;maxWords:number;checklist:string[];example:string}};
+export type Exercise={id:string;category:Category;level:'A1'|'A2'|'B1'|'B2'|'C1'|'C2';focus?:string;title:string;description:string;minutes:number;passage?:string;audio?:string;questions:Question[];writing?:{prompt:string;minWords:number;maxWords:number;checklist:string[];example:string}};
 export const categories:{id:Category;name:string;description:string}[]=[
  {id:'grammatica',name:'Grammatica',description:'Lidwoorden, enkelvoud, meervoud en de drie tijden.'},
  {id:'spelling',name:'Spelling',description:'Werkwoorden, klanken en lastige woorden.'},

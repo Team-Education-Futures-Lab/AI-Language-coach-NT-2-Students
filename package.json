@@ -16,7 +16,7 @@
     "db:mysql": "node scripts/setup-mysql-db.mjs",
     "typecheck": "tsc --noEmit",
     "db:supabase": "node --env-file=.env.local scripts/setup-supabase.mjs",
-    "test": "node --test tests/postgres-migration.test.mjs"
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

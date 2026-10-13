@@ -1,6 +1,6 @@
 # AI Taalcoach — gratis online demo
 
-NT2-leeromgeving met vaste oefeningen, taalspellen, een persoonlijke leerroute, coachpersonages en lokale AI. Deze branch draait op **Next.js 16 + Vercel + Supabase PostgreSQL/Auth**.
+NT2-leeromgeving met vaste oefeningen, taalspellen, een persoonlijke leerroute, coachpersonages en AI via een gratis serverdienst. Deze branch draait op **Next.js 16 + Vercel + Supabase PostgreSQL/Auth**.
 
 ## Lokaal starten
 
@@ -32,7 +32,21 @@ Hobby is alleen bedoeld voor persoonlijke, niet-commerciële projecten. Bij gebr
 
 ## AI en spraak
 
-De AI en vertaling gebruiken WebLLM in de browser. De gebruiker start zelf de eenmalige download (ongeveer 2,5 GB). Dit vraagt WebGPU, voldoende geheugen en een geschikte Chrome/Edge-browser. Gewone oefeningen en vaste hints werken zonder model. Spraakherkenning gebruikt de bestaande lokale Whisper-worker; voorlezen gebruikt beschikbare apparaatstemmen. De oude OpenAI-serverroutes zijn in deze gratis configuratie uitgeschakeld en kunnen geen kosten maken.
+De actieve AI draait op Groq Free; er wordt geen model in de browser geladen. Stel de serversecret `GROQ_API_KEY` in en zet `AI_FREE_TIER_CONFIRMED=true` **uitsluitend na controle dat het Groq-project Free is, zonder facturering**. De code activeert nooit een betaald plan, probeert geen betaalde fallback en stopt bij quota. Een API-sleutel alleen kan niet bewijzen dat een eigenaar later niet zelf het account heeft opgewaardeerd: houd dat account dus op Free.
+
+Tekst, vertaling, lesideeën en persoonlijke opdrachten gebruiken `qwen/qwen3.8-27b`. Spraakherkenning gebruikt `whisper-large-v3-turbo` op Groq. Het spraakgesprek wisselt automatisch opname, transcriptie, antwoord en voorlezen af; dit is geen full-duplex audiomodel. De beste beschikbare Nederlandse browser-/apparaatstem wordt gebruikt, met handmatige stemkeuze. Stemkwaliteit en microfoontoegang verschillen per apparaat; geen garantie dat iedere browser een Nederlandse stem heeft. Typen blijft beschikbaar.
+
+De eigenaar kan eventueel Gemini Free configureren met `GEMINI_API_KEY` als tekstalternatief; Groq heeft prioriteit en er wordt niet automatisch tussen providers gewisseld bij fouten. De oude OpenAI-routes blijven uitgeschakeld. Tekst en gesproken berichten worden door de gekozen AI-aanbieder verwerkt: de oude claim dat alles lokaal blijft geldt niet meer.
+
+## Persoonlijke opdrachten en oefenniveau
+
+Voer na de basismigratie ook `202610130001_adaptive_learning.sql` uit. Alleen server-gevalideerde, unieke afgeronde oefeningen tellen mee voor het ontgrendelen van oefenniveaus. XP-drempels en de beste dagelijkse oefenreeks staan in `lib/progression.ts`. Dit is motivatie/progressie, geen officieel ERK-oordeel. C2 is het maximum. De afzonderlijke AI-taalcheck blijft een voorlopig advies; alleen de docent van een gekoppelde klas kan het oefenniveau handmatig instellen of automatisch groeien herstellen. Vrije profielinvoer kan deze instelling niet overschrijven.
+
+De docent kan per klas AI-opdrachtreeksen activeren of pauzeren, naast handgemaakte lessen. Zonder actieve klasplanning krijgen studenten een persoonlijke weekopdracht. De generator gebruikt het actuele niveau, vakgebied, interesses en leerdoel. Gegenereerde inhoud wordt structureel gevalideerd, maar AI kan inhoudelijke fouten maken. Oude versies en resultaten blijven bewaard; bij een mislukte generatie blijft de laatste opdracht beschikbaar. Gelijktijdige verzoeken delen een databaselease zodat ze geen dubbele generatie starten.
+
+Voor vernieuwing zonder ingelogde student: voer `202610130002_assignment_scheduler.sql` uit op Supabase Free. Deze stelt pg_cron/pg_net in, elke tien minuten, maximaal één nieuwe opdracht per run. Wijzig de vaste demo-URL voor een andere installatie. Het routegeheim wordt willekeurig in de afgesloten database gegenereerd en nooit in Git bewaard. Inhalen gebeurt ook bij het openen van de bibliotheek. Deadlines zijn zichtbaar; vernieuwing kan bij drukte, quota of een gepauzeerd gratis Supabase-project later volgen. Dag- en weekintervallen zijn exacte perioden van 24 uur; maandintervallen volgen de kalender, met correctie voor maandlengte.
+
+Interfacevertalingen worden gecachet. Eigen taalnamen en opleidingen zijn toegestaan; suggesties zijn geen uitputtende lijst. Nieuws komt uitsluitend van echte RSS-bronnen. AI selecteert op profiel en niveau; bij storing blijft een keuze op trefwoorden beschikbaar. De originele bronartikelen worden niet herschreven.
 
 ## Verschillen met de oorspronkelijke repository
 
@@ -43,5 +57,5 @@ Er worden geen bestaande lokale leerlingrecords automatisch geüpload. Deze demo
 ## Controle
 
 - `npm run build`: typecheck en Next.js-productiebuild.
-- `node --test tests/postgres-migration.test.mjs`: PostgreSQL-schema, RLS, profiel/coachbehoud, idempotente XP en bescherming van les-eigenaarschap (PGlite).
+- `npm test`: PostgreSQL-schema, RLS, profiel/coachbehoud, idempotente XP en bescherming van les-eigenaarschap (PGlite).
 - Online: controleer aanmelden, profiel opslaan, een oefening afronden, uitloggen en opnieuw aanmelden. Gebruik twee testaccounts om scheiding van gegevens te controleren.

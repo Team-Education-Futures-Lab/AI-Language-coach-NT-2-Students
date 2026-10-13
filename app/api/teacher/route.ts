@@ -1,4 +1,6 @@
 import {database,fail,requireTeacher} from '@/lib/server';
+import {studentProfile} from '@/lib/server-profile';
+import {levels} from '@/lib/progression';
 
 async function dashboard(teacherId:string){
   const db=database();
@@ -10,7 +12,7 @@ async function dashboard(teacherId:string){
     FROM users u JOIN classroom_members cm ON cm.student_id=u.id
     JOIN classrooms c ON c.id=cm.classroom_id
     WHERE u.role='student' AND c.teacher_id=? GROUP BY u.id,u.email,u.display_name,u.role ORDER BY u.display_name`).bind(teacherId).all();
-  return {classes:classes.results,members:members.results,students:students.results};
+  return {classes:classes.results,members:await Promise.all(members.results.map(async m=>({...m,profile:await studentProfile(String(m.student_id))}))),students:students.results};
 }
 
 export async function GET(r:Request){
@@ -23,7 +25,12 @@ export async function POST(r:Request){
   let body:any;try{body=await r.json()}catch{return fail('Ongeldige invoer.')}
   const db=database(),now=new Date().toISOString();
   try{
-    if(body.action==='class_create'){
+    if(body.action==='level_update'){
+      if(typeof body.studentId!=='string'||!(body.level===null||levels.includes(body.level)))return fail('Kies een geldig niveau.');
+      const member=await db.prepare('SELECT cm.student_id FROM classroom_members cm JOIN classrooms c ON c.id=cm.classroom_id WHERE cm.student_id=? AND c.teacher_id=? LIMIT 1').bind(body.studentId,auth.user.id).first();
+      if(!member)return fail('Deze student hoort niet bij jouw klas.',403);
+      await db.prepare('INSERT INTO student_levels(user_id,override_level,teacher_id) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET override_level=excluded.override_level,teacher_id=excluded.teacher_id,updated_at=now()').bind(body.studentId,body.level,auth.user.id).run();
+    }else if(body.action==='class_create'){
       const name=String(body.name||'').trim().slice(0,120);if(!name)return fail('Geef de klas een naam.');
       const id=crypto.randomUUID();await db.prepare('INSERT INTO classrooms (id,teacher_id,name,description,created_at,updated_at) VALUES (?,?,?,?,?,?)').bind(id,auth.user.id,name,String(body.description||'').trim().slice(0,500),now,now).run();
     }else if(body.action==='class_update'){
