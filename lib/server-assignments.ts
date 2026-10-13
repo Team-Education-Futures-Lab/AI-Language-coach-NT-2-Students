@@ -10,6 +10,7 @@ export async function schedulesFor(userId:string){
  return custom.results.length?custom.results:[{id:'personal-weekly',title:'Jouw persoonlijke weekopdracht',category:'afwisselend',instructions:'Kies een realistische situatie die past bij vakgebied en interesses. Wissel spelling, grammatica, lezen, schrijven en formuleren af.',interval_days:7,created_at:'2026-10-12T00:00:00.000Z'}];
 }
 export async function nextAssignment(userId:string,schedule:Schedule){
+ if(!aiProvider())return false;
  const db=database(),period=assignmentPeriod(String(schedule.created_at),schedule.interval_days);
  const id='ai-'+crypto.randomUUID();
  const row=await db.prepare(`INSERT INTO generated_exercises(id,user_id,schedule_id,period_start,due_at,lease_until) VALUES(?,?,?,?,?,now()+interval '90 seconds')
