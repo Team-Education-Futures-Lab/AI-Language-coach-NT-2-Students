@@ -15,7 +15,7 @@ const choiceRound=z.object({q:z.string().min(10).max(600),options:z.array(z.stri
 const challengeSchema=z.object({id:z.enum(['sentence','editor','register']),rounds:z.array(z.union([z.object({words:z.array(z.string().min(1).max(50)).min(3).max(22),why:z.string().min(10).max(500)}),choiceRound])).length(5)}).superRefine((v,c)=>{if(v.rounds.some(r=>(v.id==='sentence')!==('words'in r)))c.addIssue({code:'custom',message:'Verkeerd speltype'});});
 export function baseItems(area:RotationArea):any[]{if(area.startsWith('library-'))return exercises.filter(e=>e.category===area.slice(8));if(area==='missions')return missions.filter(m=>m.id!=='personal');if(area==='atelier')return atelierTasks.map(t=>({...t}));return [{id:'sentence',rounds:sentenceRounds},{id:'editor',rounds:editRounds},{id:'register',rounds:registerRounds}];}
 export function parseRotation(area:RotationArea,raw:string,level:string){
- const value=JSON.parse(raw);const items=z.object({items:z.array(z.unknown()).min(1).max(6)}).parse(value).items;
+ const value=JSON.parse(raw);if(value?.items&&typeof value.items==='object'&&!Array.isArray(value.items))value.items=Object.entries(value.items).map(([id,item])=>({...item as object,id}));const items=z.object({items:z.array(z.unknown()).min(1).max(6)}).parse(value).items;
  const bases=baseItems(area);if(items.length!==bases.length)throw Error('Onvolledige reeks');
  const parsed=items.map((item:any)=>{
   const base=bases.find(b=>b.id===item?.id);if(!base)throw Error('Onbekende oefenplek');
