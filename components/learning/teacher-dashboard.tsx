@@ -31,7 +31,7 @@ export function TeacherDashboard(){
   function reset(){setName('');setDescription('');setNotice('')}
   async function saveClass(){
     if(!newName.trim())return;
-    setBusy(true);setError('');try{const next=await call({action:'class_create',name,description});setData(next);setSelected(next.classes.at(-1)?.id||'');reset();setNotice('Klas aangemaakt.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
+    setBusy(true);setError('');try{const next=await call({action:'class_create',name:newName,description:newDescription});const created=next.classes.find(c=>!data.classes.some(previous=>previous.id===c.id));setData(next);setSelected(created?.id||'');setNewName('');setNewDescription('');setNotice('Klas aangemaakt.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
   }
   async function updateClass(){
     if(!active||!name.trim())return;
