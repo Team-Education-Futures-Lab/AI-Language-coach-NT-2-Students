@@ -35,6 +35,7 @@ test('generated questions reject invalid answer indices and incomplete reading t
  assert.equal(generatedSchema.safeParse({...sample,questions:sample.questions.map(q=>({...q,correct:3}))}).success,false);
  const writing={category:'schrijven',level:'A1',title:'Een kort bericht',description:'Schrijf een bericht aan een collega.',minutes:5,writing:{prompt:'Vertel je collega wanneer je naar het laboratorium komt.',minWords:10,maxWords:30,checklist:['Ik noem een dag.','Ik noem een tijd.'],example:'Hallo Sam, ik kom morgen om negen uur. Tot morgen!'}};
  assert.deepEqual(generatedSchema.parse(writing).questions,[]);
+ assert.equal(generatedSchema.safeParse({...writing,writing:{...writing.writing,example:'Dit is te kort.'}}).success,false);
  assert.equal(generatedSchema.safeParse({...sample,questions:undefined}).success,false);
 });
 test('tutor output guard catches solved answers without blocking ordinary Dutch articles',()=>{
