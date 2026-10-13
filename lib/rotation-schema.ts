@@ -20,7 +20,7 @@ export function parseRotation(area:RotationArea,raw:string,level:string){
  const parsed=items.map((item:any)=>{
   const base=bases.find(b=>b.id===item?.id);if(!base)throw Error('Onbekende oefenplek');
   if(area.startsWith('library-')){
-   const category=area.slice(8);const input={...item,category:category==='luisteren'?'lezen':category};
+   const category=area.slice(8);const input={...item,questions:item.questions?.map(uniqueChoices),category:category==='luisteren'?'lezen':category};
    const ex=generatedSchema.parse(input);if(ex.level!==level)throw Error('Verkeerd niveau');
    return {...ex,id:base.id,category,focus:base.focus} as Exercise;
   }
@@ -33,3 +33,6 @@ export function parseRotation(area:RotationArea,raw:string,level:string){
 }
 export type RotationGroup={area:RotationArea;dueAt:string;pending:boolean;warning:string;versionId:string|null;items:any[];level:string;intervalDays:number};
 export function versionedItems(group:RotationGroup){return group.items.map(item=>({...item,...(group.area.startsWith('library-')&&group.versionId?{id:`rot:${group.versionId}:${item.id}`}:{})}));}
+
+// Identical distractors do not add a choice. Keep the answer meaning and re-index it.
+function uniqueChoices(q:any){if(!Array.isArray(q?.options)||!Number.isInteger(q.correct)||q.correct<0||q.correct>=q.options.length)return q;const key=(s:string)=>s.trim().toLocaleLowerCase('nl-NL');if(q.options.some((x:unknown)=>typeof x!=='string'))return q;const answer=key(q.options[q.correct]);const options=q.options.filter((s:string,i:number,a:string[])=>a.findIndex(x=>key(x)===key(s))===i);return {...q,options,correct:options.findIndex((x:string)=>key(x)===answer)}}
