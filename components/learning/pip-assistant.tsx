@@ -6,7 +6,7 @@ import {PipMascot,type PipMood} from './pip-mascot';
 import {VoiceControls} from './voice-controls';
 import {LocalAISetup,useLocalAI} from './local-ai-setup';
 import {localCompletion,type AIMessage} from '@/lib/local-ai';
-import {helpPrompt,studyHint,type HelpContext} from '@/lib/pip-help';
+import {helpPrompt,studyHint,avoidsAnswer,type HelpContext} from '@/lib/pip-help';
 const fallback:HelpContext={id:'home',title:'Mijn leerplek',level:'B1',description:'Een leeromgeving voor spelling, lezen, luisteren, schrijven en formuleren.'};
 type HelpMessage=AIMessage&{kind?:'hint'|'selected'};
 type Help={context:HelpContext;setPage:(c:HelpContext)=>void};
@@ -30,8 +30,13 @@ export function PipAssistant({context:provided,answers=[],embedded=false,onHelpU
   const question=(spoken??input).trim().slice(0,1000);if(!question||busy||ai.status!=='ready')return;onHelpUsed?.();const next:HelpMessage[]=[...messages,{role:'user',content:question}],g=generation.current;
   const c=new AbortController();abort.current=c;setInput('');setMessages(next);setBusy(true);setError('');
   try{
-   const reply=await localCompletion([{role:'system',content:helpPrompt(context,coach)},...next.slice(-10).map(({role,content})=>({role,content}))],{signal:c.signal,maxTokens:750});
-   if(g===generation.current){setMessages([...next,{role:'assistant',content:reply}]);setHints(h=>h+1)}
+   const conversation=next.slice(-10).map(({role,content})=>({role,content}));
+   let reply=await localCompletion([{role:'system',content:helpPrompt(context,coach)},...conversation],{signal:c.signal,maxTokens:750});
+   if(answers.length&&!avoidsAnswer(reply,answers)){
+    reply=await localCompletion([{role:'system',content:helpPrompt(context,coach)+'\nYour previous draft revealed an exercise answer. Give a different explanation without quoting or correcting the target word or sentence. Use an unrelated example and ask only one guiding question. Do not choose an option.'},...conversation],{signal:c.signal,maxTokens:500});
+   }
+   const guarded=answers.length&&!avoidsAnswer(reply,answers);
+   if(g===generation.current){setMessages([...next,{role:'assistant',content:guarded?studyHint(context,hints):reply,...(guarded?{kind:'hint' as const}:{})}]);setHints(h=>h+1)}
   }
   catch(e){if(g===generation.current){setInput(question);setMessages(messages);setError((e as Error).message)}}finally{if(g===generation.current)setBusy(false)}
  }

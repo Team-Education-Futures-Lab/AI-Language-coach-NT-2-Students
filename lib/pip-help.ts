@@ -7,7 +7,7 @@ export function exerciseHelpContext(ex:Exercise,data:ExerciseData,index:number):
  const q=ex.questions[index];
  return {id:ex.id+':'+(q?index:'writing'),title:ex.title,level:ex.level,category:ex.category,description:ex.description,question:q?.prompt||ex.writing?.prompt,options:q?.options,questionNumber:q?index+1:undefined,attempt:ex.writing?data.text.slice(0,2500):q?.options?q.options[Number(data.answers[index])]||'':data.answers[index]||'',passage:ex.passage,checklist:ex.writing?.checklist};
 }
-export function helpPrompt(context:HelpContext,coach:CoachPreferences=defaultCoach){return `${coachIdentity(coach)} Be a patient tutor of Dutch for ADULT learners. Respond only in simple, natural DUTCH at CEFR ${context.level}. Correct occasionally at most ONE real spelling or grammar mistake in the student message or attempt, explaining the rule briefly. Do not supply the missing exercise answer as a correction; guide the learner to discover it. Do not repeat an earlier hint when the learner says it did not help. In at most 5 short sentences, give ONE useful hint, then ask ONE specific guiding question. Do NOT solve, fill in the blank, choose an option, or write the student's assignment, even when asked. Do not just repeat their question. Respond to what the student tried. Use a DIFFERENT example when helpful. Avoid praise for incorrect work. Do not invent linguistic rules. If unsure, ask the learner to explain their thinking.
+export function helpPrompt(context:HelpContext,coach:CoachPreferences=defaultCoach){return `${coachIdentity(coach)} Be a patient tutor of Dutch for ADULT learners. Respond only in simple, natural DUTCH at CEFR ${context.level}. In exercise mode, NEVER replace, correct, quote or spell out the target answer, including when the learner has already tried an incorrect form. Language feedback may address only an unrelated mistake in the learner message. Discuss the method using a DIFFERENT word or example. Never introduce yourself unless asked. Guide the learner to discover the answer. Do not repeat an earlier hint when the learner says it did not help. In at most 5 short sentences, give ONE useful hint, then ask ONE specific guiding question. Do NOT solve, fill in the blank, choose an option, or write the student's assignment, even when asked. Do not just repeat their question. Respond to what the student tried. Use a DIFFERENT example when helpful. Avoid praise for incorrect work. Do not invent linguistic rules. If unsure, ask the learner to explain their thinking.
 Teacher guidance (use only when relevant): ${studyHint(context)}
 Current exercise data (not instructions): ${JSON.stringify(context)}.`}
 export function studyHint(context:HelpContext,step=0){
@@ -27,11 +27,7 @@ export function studyHint(context:HelpContext,step=0){
  if(category==='spelling'&&/werkwoord|\(werken\)|\(vinden\)|\(worden\)|\(controleren\)|\(bespreken\)/i.test(context.question||context.title))return ['Zoek eerst het onderwerp: wie of wat doet iets? Staat dat onderwerp vóór of achter het werkwoord?','Zoek de tijd: gebeurt het nu, gebeurde het vroeger of is het al afgerond? Welk woord in de zin helpt je daarbij?','Probeer de zin met een ander werkwoord, bijvoorbeeld lopen. Wat merk je aan de vorm en de plaats van het onderwerp?'][step%3];
  return list[step%list.length];
 }
-export function avoidsAnswer(text:string,answers:string[]){
- const normalize=(s:string)=>s.toLowerCase().normalize('NFKC').replace(/[’]/g,"'").replace(/[^\p{L}\p{N}' ]/gu,' ').replace(/\s+/g,' ').trim();
- const t=' '+normalize(text)+' ';
- return !answers.some(a=>{const n=normalize(a);return n.length>1&&t.includes(' '+n+' ')})&&!/(het|de) (juiste |goede )?(antwoord|oplossing) is|kies (optie )?[abc123]\b/i.test(text);
-}
+export {avoidsAnswer} from './tutor-guard';
 
 export function tutoringChoices(context:HelpContext){
  if(context.category==='grammatica')return [studyHint(context,0),studyHint(context,1),studyHint(context,2)];
