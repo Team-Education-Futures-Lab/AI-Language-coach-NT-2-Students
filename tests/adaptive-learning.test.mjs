@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
 import ts from 'typescript';
 import {calculateProgress} from '../lib/progression.ts';
-import {assignmentPeriod,assignmentView,generatedSchema} from '../lib/assignment-schema.ts';
+import {assignmentPeriod,assignmentView,generatedSchema,parseGeneratedExercise} from '../lib/assignment-schema.ts';
 import {avoidsAnswer} from '../lib/tutor-guard.ts';
 const db=new PGlite();
 before(async()=>{await db.exec('CREATE ROLE anon; CREATE ROLE authenticated;');for(const f of ['202610070001_platform.sql','202610130001_adaptive_learning.sql','202610130003_json_payloads.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+f,import.meta.url),'utf8'))});
@@ -32,6 +32,8 @@ test('changing an interval updates the countdown and requires the correct curren
 test('generated questions reject invalid answer indices and incomplete reading tasks',()=>{
  const sample={category:'lezen',level:'A1',title:'Een korte tekst',description:'Lees de tekst en kies het antwoord.',minutes:5,passage:'Sam gaat naar school.',questions:Array.from({length:3},()=>({prompt:'Waar gaat Sam heen?',options:['School','Huis'],correct:0,explanation:'Sam gaat naar school.'}))};
  assert.equal(generatedSchema.safeParse(sample).success,true);assert.equal(generatedSchema.safeParse({...sample,passage:undefined}).success,false);
+ assert.deepEqual(parseGeneratedExercise(JSON.stringify({level:'A1',exercise:sample})),sample);
+ assert.throws(()=>parseGeneratedExercise(JSON.stringify({exercise:{...sample,passage:undefined}})));
  assert.equal(generatedSchema.safeParse({...sample,questions:sample.questions.map(q=>({...q,correct:3}))}).success,false);
  const writing={category:'schrijven',level:'A1',title:'Een kort bericht',description:'Schrijf een bericht aan een collega.',minutes:5,writing:{prompt:'Vertel je collega wanneer je naar het laboratorium komt.',minWords:10,maxWords:30,checklist:['Ik noem een dag.','Ik noem een tijd.'],example:'Hallo Sam, ik kom morgen om negen uur. Tot morgen!'}};
  assert.deepEqual(generatedSchema.parse(writing).questions,[]);

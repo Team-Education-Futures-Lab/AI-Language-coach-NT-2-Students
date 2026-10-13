@@ -18,3 +18,9 @@ export function assignmentView<T>(rows:{exercise:T|null;period_start:string;due_
  const available=current?.exercise?current:rows.find(row=>row.exercise);
  return {exercise:available?.exercise||null,dueAt:current?.exercise?period.due:available?.due_at||period.due,pending:!current?.exercise,warning:current?.last_error||''};
 }
+
+export function parseGeneratedExercise(raw:string){
+ const value=JSON.parse(raw);
+ // A reviewer may preserve the input envelope. Validate the full inner exercise either way.
+ return generatedSchema.parse(value&&typeof value==='object'&&value.exercise?value.exercise:value);
+}
