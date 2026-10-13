@@ -4,7 +4,7 @@ import {levels} from '@/lib/progression';
 
 async function dashboard(teacherId:string){
   const db=database();
-  const classes=await db.prepare('SELECT id,name,description,created_at,updated_at FROM classrooms WHERE teacher_id=? ORDER BY name').bind(teacherId).all();
+  const classes=await db.prepare('SELECT id,name,description,cohort,created_at,updated_at FROM classrooms WHERE teacher_id=? ORDER BY name').bind(teacherId).all();
   const members=await db.prepare(`SELECT cm.classroom_id,cm.student_id,cm.joined_at,u.email,u.display_name
     FROM classroom_members cm JOIN classrooms c ON c.id=cm.classroom_id JOIN users u ON u.id=cm.student_id
     WHERE c.teacher_id=? ORDER BY u.display_name`).bind(teacherId).all();
@@ -12,7 +12,8 @@ async function dashboard(teacherId:string){
     FROM users u JOIN classroom_members cm ON cm.student_id=u.id
     JOIN classrooms c ON c.id=cm.classroom_id
     WHERE u.role='student' AND c.teacher_id=? GROUP BY u.id,u.email,u.display_name,u.role ORDER BY u.display_name`).bind(teacherId).all();
-  return {classes:classes.results,members:await Promise.all(members.results.map(async m=>({...m,profile:await studentProfile(String(m.student_id))}))),students:students.results};
+  const invitations=await db.prepare('SELECT i.id,i.classroom_id,i.email,i.expires_at FROM classroom_invitations i JOIN classrooms c ON c.id=i.classroom_id WHERE c.teacher_id=? AND i.expires_at>now() ORDER BY i.created_at DESC').bind(teacherId).all();
+  return {invitations:invitations.results,classes:classes.results,members:await Promise.all(members.results.map(async m=>({...m,profile:await studentProfile(String(m.student_id))}))),students:students.results};
 }
 
 export async function GET(r:Request){
@@ -32,10 +33,10 @@ export async function POST(r:Request){
       await db.prepare('INSERT INTO student_levels(user_id,override_level,teacher_id) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET override_level=excluded.override_level,teacher_id=excluded.teacher_id,updated_at=now()').bind(body.studentId,body.level,auth.user.id).run();
     }else if(body.action==='class_create'){
       const name=String(body.name||'').trim().slice(0,120);if(!name)return fail('Geef de klas een naam.');
-      const id=crypto.randomUUID();await db.prepare('INSERT INTO classrooms (id,teacher_id,name,description,created_at,updated_at) VALUES (?,?,?,?,?,?)').bind(id,auth.user.id,name,String(body.description||'').trim().slice(0,500),now,now).run();
+      const id=crypto.randomUUID();await db.prepare('INSERT INTO classrooms (id,teacher_id,name,description,cohort,created_at,updated_at) VALUES (?,?,?,?,?,?,?)').bind(id,auth.user.id,name,String(body.description||'').trim().slice(0,500),String(body.cohort||'').trim().slice(0,100),now,now).run();
     }else if(body.action==='class_update'){
       const name=String(body.name||'').trim().slice(0,120);if(!name||typeof body.id!=='string')return fail('Ongeldige klas.');
-      await db.prepare('UPDATE classrooms SET name=?,description=?,updated_at=? WHERE id=? AND teacher_id=?').bind(name,String(body.description||'').trim().slice(0,500),now,body.id,auth.user.id).run();
+      await db.prepare('UPDATE classrooms SET name=?,description=?,cohort=?,updated_at=? WHERE id=? AND teacher_id=?').bind(name,String(body.description||'').trim().slice(0,500),String(body.cohort||'').trim().slice(0,100),now,body.id,auth.user.id).run();
     }else if(body.action==='class_delete'){
       if(typeof body.id!=='string')return fail('Ongeldige klas.');
       await db.prepare('DELETE FROM classroom_members WHERE classroom_id IN (SELECT id FROM classrooms WHERE id=? AND teacher_id=?)').bind(body.id,auth.user.id).run();
@@ -44,9 +45,14 @@ export async function POST(r:Request){
       if(typeof body.classroomId!=='string'||typeof body.studentEmail!=='string')return fail('Vul een leerling-e-mailadres in.');
       const classroom=await db.prepare('SELECT id FROM classrooms WHERE id=? AND teacher_id=?').bind(body.classroomId,auth.user.id).first();if(!classroom)return fail('Klas niet gevonden.',404);
       const email=body.studentEmail.trim().toLowerCase();if(!email.includes('@'))return fail('Gebruik een geldig e-mailadres.');
-      const student=await db.prepare('SELECT id FROM users WHERE email=? AND role=?').bind(email,'student').first<{id:string}>();
-      if(!student)return fail('Deze student heeft nog geen account. Laat de student eerst inloggen.');
-      await db.prepare('INSERT INTO classroom_members (classroom_id,student_id,joined_at) VALUES (?,?,?) ON CONFLICT DO NOTHING').bind(body.classroomId,student.id,now).run();
+      const count=await db.prepare('SELECT count(*)::int AS n FROM classroom_invitations WHERE classroom_id=? AND expires_at>now()').bind(body.classroomId).first<{n:number}>();
+      if((count?.n||0)>=100)return fail('Deze klas heeft al 100 openstaande uitnodigingen.');
+      const existing=await db.prepare('SELECT 1 FROM classroom_members cm JOIN users u ON u.id=cm.student_id WHERE cm.classroom_id=? AND u.email=?').bind(body.classroomId,email).first();
+      if(existing)return fail('Deze student zit al in deze klas.');
+      await db.prepare("INSERT INTO classroom_invitations(classroom_id,email) VALUES(?,?) ON CONFLICT(classroom_id,email) DO UPDATE SET expires_at=now()+interval '30 days'").bind(body.classroomId,email).run();
+    }else if(body.action==='invite_remove'){
+      if(typeof body.id!=='string')return fail('Ongeldige uitnodiging.');
+      await db.prepare('DELETE FROM classroom_invitations WHERE id=? AND classroom_id IN (SELECT id FROM classrooms WHERE teacher_id=?)').bind(body.id,auth.user.id).run();
     }else if(body.action==='student_remove'){
       if(typeof body.classroomId!=='string'||typeof body.studentId!=='string')return fail('Ongeldige studentkoppeling.');
       await db.prepare('DELETE FROM classroom_members WHERE classroom_id=? AND student_id=? AND classroom_id IN (SELECT id FROM classrooms WHERE id=? AND teacher_id=?)').bind(body.classroomId,body.studentId,body.classroomId,auth.user.id).run();

@@ -2,10 +2,10 @@
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {GraduationCap,Minus,Plus,Save,Trash2,Users} from 'lucide-react';
 
-type Classroom={id:string;name:string;description:string};
+type Classroom={id:string;name:string;description:string;cohort:string};
 type Student={id:string;email:string;display_name:string;class_count:number};
 type Member={profile?:{level:string;progress?:{teacherSet:boolean}};classroom_id:string;student_id:string;email:string;display_name:string};
-type Data={classes:Classroom[];students:Student[];members:Member[]};
+type Data={invitations:{id:string;classroom_id:string;email:string;expires_at:string}[];classes:Classroom[];students:Student[];members:Member[]};
 
 async function call(body?:unknown){
   const r=await fetch('/api/teacher',body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:undefined);
@@ -13,10 +13,11 @@ async function call(body?:unknown){
 }
 
 export function TeacherDashboard(){
-  const [data,setData]=useState<Data>({classes:[],students:[],members:[]});
+  const [data,setData]=useState<Data>({invitations:[],classes:[],students:[],members:[]});
   const [selected,setSelected]=useState('');
   const [name,setName]=useState('');
   const [description,setDescription]=useState('');
+  const [cohort,setCohort]=useState(''),[newCohort,setNewCohort]=useState('');
   const [email,setEmail]=useState('');
   const [newName,setNewName]=useState('');
   const [newDescription,setNewDescription]=useState('');
@@ -31,11 +32,11 @@ export function TeacherDashboard(){
   function reset(){setName('');setDescription('');setNotice('')}
   async function saveClass(){
     if(!newName.trim())return;
-    setBusy(true);setError('');try{const next=await call({action:'class_create',name:newName,description:newDescription});const created=next.classes.find(c=>!data.classes.some(previous=>previous.id===c.id));setData(next);setSelected(created?.id||'');setNewName('');setNewDescription('');setNotice('Klas aangemaakt.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
+    setBusy(true);setError('');try{const next=await call({action:'class_create',name:newName,description:newDescription,cohort:newCohort});const created=next.classes.find(c=>!data.classes.some(previous=>previous.id===c.id));setData(next);setSelected(created?.id||'');setNewName('');setNewDescription('');setNewCohort('');setNotice('Klas aangemaakt.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
   }
   async function updateClass(){
     if(!active||!name.trim())return;
-    setBusy(true);setError('');try{const next=await call({action:'class_update',id:active.id,name,description});setData(next);setNotice('Klas opgeslagen.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
+    setBusy(true);setError('');try{const next=await call({action:'class_update',id:active.id,name,description,cohort});setData(next);setNotice('Klas opgeslagen.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
   }
   async function deleteClass(){
     if(!active||!window.confirm(`Klas "${active.name}" verwijderen?`))return;
@@ -43,28 +44,28 @@ export function TeacherDashboard(){
   }
   async function addStudent(){
     if(!active||!email.trim())return;
-    setBusy(true);setError('');try{setData(await call({action:'student_add',classroomId:active.id,studentEmail:email}));setEmail('');setNotice('Student aan de klas toegevoegd.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
+    setBusy(true);setError('');try{setData(await call({action:'student_add',classroomId:active.id,studentEmail:email}));setEmail('');setNotice('Uitnodiging klaargezet. De student ziet deze na inloggen met dit e-mailadres en bevestigt zelf de deelname. Er is geen aparte e-mail verstuurd.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
   }
   async function removeStudent(studentId:string){
     if(!active)return;
     setBusy(true);setError('');try{setData(await call({action:'student_remove',classroomId:active.id,studentId}));setNotice('Student uit de klas verwijderd.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
   }
-  useEffect(()=>{if(active){setName(active.name);setDescription(active.description)}},[active?.id]);
+  useEffect(()=>{if(active){setName(active.name);setDescription(active.description);setCohort(active.cohort||'')}},[active?.id]);
   return <section className="teacher-dashboard">
     <div className="teacher-intro"><span className="icon-tile"><GraduationCap size={23}/></span><div><h3>Studentenbeheer</h3><p>Beheer je klassen en houd bij welke studenten deelnemen.</p></div><span className="tag">Docent admin</span></div>
     {error&&<div className="error-banner" role="alert">{error}<button onClick={()=>void load()}>Opnieuw proberen</button></div>}
     {notice&&<div className="notice" role="status">{notice}</div>}
     <div className="teacher-dashboard-grid">
       <section className="panel class-list"><div className="section-heading"><div><h2>Mijn klassen</h2><p>{data.classes.length} {data.classes.length===1?'klas':'klassen'}</p></div><Users size={21}/></div>
-        {data.classes.map(c=><button key={c.id} className={'class-list-item '+(active?.id===c.id?'active':'')} onClick={()=>setSelected(c.id)}><span><b>{c.name}</b><small>{data.members.filter(m=>m.classroom_id===c.id).length} studenten</small></span><span>›</span></button>)}
+        {data.classes.map(c=><button key={c.id} className={'class-list-item '+(active?.id===c.id?'active':'')} onClick={()=>setSelected(c.id)}><span><b>{c.name}</b><small>{c.cohort?c.cohort+' · ':''}{data.members.filter(m=>m.classroom_id===c.id).length} studenten</small></span><span>›</span></button>)}
         {!data.classes.length&&<p className="muted">Maak je eerste klas aan.</p>}
-        <div className="class-form"><label className="field-label">Nieuwe klasnaam<input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Bijvoorbeeld: NT2 B1 ochtend"/></label><label className="field-label">Beschrijving<textarea rows={3} value={newDescription} onChange={e=>setNewDescription(e.target.value)} placeholder="Optioneel"/></label><button className="primary-button" disabled={busy||!newName.trim()} onClick={saveClass}><Plus size={17}/>Klas toevoegen</button></div>
+        <div className="class-form"><label className="field-label">Nieuwe klasnaam<input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Bijvoorbeeld: NT2 B1 ochtend"/></label><label className="field-label">Cohort<input maxLength={100} value={newCohort} onChange={e=>setNewCohort(e.target.value)} placeholder="Bijvoorbeeld: 2026–2027"/></label><label className="field-label">Beschrijving<textarea rows={3} value={newDescription} onChange={e=>setNewDescription(e.target.value)} placeholder="Optioneel"/></label><button className="primary-button" disabled={busy||!newName.trim()} onClick={saveClass}><Plus size={17}/>Klas toevoegen</button></div>
       </section>
       <section className="panel class-detail">{active?<><div className="section-heading"><div><span className="eyebrow">GESELECTEERDE KLAS</span><h2>{active.name}</h2><p>{members.length} studenten in deze klas</p></div><button className="icon-action" aria-label="Klas verwijderen" onClick={deleteClass}><Trash2 size={18}/></button></div>
-        <div className="class-form inline"><label className="field-label">Naam<input value={name} onChange={e=>setName(e.target.value)}/></label><label className="field-label">Beschrijving<textarea rows={2} value={description} onChange={e=>setDescription(e.target.value)}/></label><button className="outline-button" disabled={busy||!name.trim()} onClick={updateClass}><Save size={16}/>Wijzigingen opslaan</button></div>
-        <div className="section-heading student-heading"><div><h3>Studenten</h3><p>Voeg studenten toe die al een account hebben.</p></div></div>
-        <div className="student-add"><input value={email} onChange={e=>setEmail(e.target.value)} placeholder="student@voorbeeld.nl" aria-label="E-mailadres student"/><button className="primary-button" disabled={busy||!email.trim()} onClick={addStudent}><Plus size={17}/>Toevoegen</button></div>
-        <div className="student-list">{members.map(m=><div className="student-row" key={m.student_id}><span className="avatar"><Users size={16}/></span><span><b>{m.display_name}</b><small>{m.email}</small><label className="field-label">Oefenniveau<select aria-label={`Oefenniveau van ${m.email}`} disabled={busy} value={m.profile?.progress?.teacherSet?m.profile.level:'auto'} onChange={async e=>{setBusy(true);setError('');try{setData(await call({action:'level_update',studentId:m.student_id,level:e.target.value==='auto'?null:e.target.value}));setNotice('Oefenniveau bijgewerkt.')}catch(err){setError((err as Error).message)}finally{setBusy(false)}}}><option value="auto">Automatisch ({m.profile?.level||'A1'})</option>{['A1','A2','B1','B2','C1','C2'].map(l=><option key={l}>{l}</option>)}</select></label></span><button className="icon-action" aria-label={`${m.display_name} verwijderen`} onClick={()=>void removeStudent(m.student_id)}><Minus size={17}/></button></div>)}{!members.length&&<div className="empty-state"><Users size={30}/><p>Nog geen studenten in deze klas.</p></div>}</div>
+        <div className="class-form inline"><label className="field-label">Naam<input value={name} onChange={e=>setName(e.target.value)}/></label><label className="field-label">Cohort<input maxLength={100} value={cohort} onChange={e=>setCohort(e.target.value)} placeholder="Bijvoorbeeld: 2026–2027"/></label><label className="field-label">Beschrijving<textarea rows={2} value={description} onChange={e=>setDescription(e.target.value)}/></label><button className="outline-button" disabled={busy||!name.trim()} onClick={updateClass}><Save size={16}/>Wijzigingen opslaan</button></div>
+        <div className="section-heading student-heading"><div><h3>Studenten</h3><p>Nodig een student uit op het e-mailadres van diens account. Ook mogelijk vóór registratie; de uitnodiging verschijnt na inloggen en blijft 30 dagen geldig.</p></div></div>
+        <div className="student-add"><input value={email} onChange={e=>setEmail(e.target.value)} placeholder="student@voorbeeld.nl" aria-label="E-mailadres student"/><button className="primary-button" disabled={busy||!email.trim()} onClick={addStudent}><Plus size={17}/>Uitnodigen</button></div>
+        <div className="class-pending">{data.invitations.filter(i=>i.classroom_id===active.id).map(i=><div className="student-row" key={i.id}><span><b>{i.email}</b><small>Wacht op bevestiging · geldig tot {new Date(i.expires_at).toLocaleDateString('nl-NL')}</small></span><button type="button" className="outline-button" disabled={busy} onClick={async()=>{setBusy(true);setError('');try{setData(await call({action:'invite_remove',id:i.id}));setNotice('Uitnodiging ingetrokken.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}}}>Intrekken</button></div>)}</div><div className="student-list">{members.map(m=><div className="student-row" key={m.student_id}><span className="avatar"><Users size={16}/></span><span><b>{m.display_name}</b><small>{m.email}</small><label className="field-label">Oefenniveau<select aria-label={`Oefenniveau van ${m.email}`} disabled={busy} value={m.profile?.progress?.teacherSet?m.profile.level:'auto'} onChange={async e=>{setBusy(true);setError('');try{setData(await call({action:'level_update',studentId:m.student_id,level:e.target.value==='auto'?null:e.target.value}));setNotice('Oefenniveau bijgewerkt.')}catch(err){setError((err as Error).message)}finally{setBusy(false)}}}><option value="auto">Automatisch ({m.profile?.level||'A1'})</option>{['A1','A2','B1','B2','C1','C2'].map(l=><option key={l}>{l}</option>)}</select></label></span><button className="icon-action" aria-label={`${m.display_name} verwijderen`} onClick={()=>void removeStudent(m.student_id)}><Minus size={17}/></button></div>)}{!members.length&&<div className="empty-state"><Users size={30}/><p>Nog geen studenten in deze klas.</p></div>}</div>
       </>:<div className="empty-state"><GraduationCap size={42}/><h2>Maak je eerste klas</h2><p>Daarna kun je studenten toevoegen en beheren.</p></div>}</section>
     </div>
   </section>

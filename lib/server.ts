@@ -15,8 +15,9 @@ export async function currentUser(r:Request){
  const auth=await authenticatedUser();if(!auth)return null;
  const email=(auth.email||`${id}@demo.invalid`).toLowerCase(),name=String(auth.user_metadata?.full_name||auth.email||'Demoleerling').slice(0,160),now=new Date().toISOString(),db=database();
  const configured=(process.env.TEACHER_ADMIN_EMAILS||'').split(',').map(v=>v.trim().toLowerCase()).filter(Boolean);
- // Never trust a client-provided role or unverified email.
- const role:UserRole=!auth.is_anonymous&&!!auth.email_confirmed_at&&configured.includes(email)?'teacher_admin':'student';
+ // The initial choice is captured by a database trigger, never by mutable user_metadata.
+ const registration=await db.prepare('SELECT account_type FROM account_registrations WHERE user_id=?').bind(id).first<{account_type:string}>();
+ const role:UserRole=!auth.is_anonymous&&!!auth.email_confirmed_at&&(configured.includes(email)||registration?.account_type==='teacher')?'teacher_admin':'student';
  await db.prepare('INSERT INTO users (id,email,display_name,role,created_at,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email,display_name=excluded.display_name,role=excluded.role,updated_at=excluded.updated_at').bind(id,email,name,role,now,now).run();
  return {id,email,display_name:name,role};
 }
