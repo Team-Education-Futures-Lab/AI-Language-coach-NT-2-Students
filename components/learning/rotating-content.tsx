@@ -1,0 +1,19 @@
+'use client';
+import {createContext,useCallback,useContext,useEffect,useRef,useState,type ReactNode} from 'react';
+import {baseItems,rotationAreas,rotationLabels,versionedItems,type RotationArea,type RotationGroup} from '@/lib/rotation-schema';
+const Context=createContext<{groups:RotationGroup[];busy:string;error:string;refresh:()=>void}>({groups:[],busy:'',error:'',refresh:()=>{}});
+export function RotatingContentProvider({children,active}:{children:ReactNode;active:readonly RotationArea[]}){
+ const [groups,setGroups]=useState<RotationGroup[]>([]),[busy,setBusy]=useState(''),[error,setError]=useState('');const mounted=useRef(true),lock=useRef(false),retry=useRef<Record<string,number>>({});
+ const load=useCallback(async()=>{try{const r=await fetch('/api/rotations');const j=await r.json() as any;if(!r.ok)throw Error(j.error);if(mounted.current){setGroups(j.groups);setError('')}}catch(e){if(mounted.current)setError((e as Error).message)}},[]);
+ useEffect(()=>{mounted.current=true;void load();const id=setInterval(()=>void load(),60000);const visible=()=>{if(!document.hidden)void load()};document.addEventListener('visibilitychange',visible);return()=>{mounted.current=false;clearInterval(id);document.removeEventListener('visibilitychange',visible)}},[load]);
+ useEffect(()=>{const item=groups.find(g=>active.includes(g.area)&&g.pending&&(retry.current[g.area]||0)<Date.now());if(!item||lock.current||document.hidden)return;lock.current=true;setBusy(item.area);retry.current[item.area]=Date.now()+30*60000;
+ void(async()=>{try{const r=await fetch('/api/rotations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({area:item.area})});const j=await r.json() as any;if(!r.ok)throw Error(j.error);if(mounted.current){setGroups(old=>old.map(g=>j.groups.find((x:RotationGroup)=>x.area===g.area)||g));setError('')}}catch(e){if(mounted.current)setError((e as Error).message)}finally{lock.current=false;if(mounted.current)setBusy('')}})();
+ },[groups,active,busy]);
+ return <Context.Provider value={{groups,busy,error,refresh:load}}>{children}</Context.Provider>;
+}
+export function useRotation(area:RotationArea){const c=useContext(Context),g=c.groups.find(x=>x.area===area);return {...c,group:g,items:g?versionedItems(g):baseItems(area)}}
+export function useRotationCatalog(){const c=useContext(Context);return rotationAreas.filter(a=>a.startsWith('library-')).flatMap(area=>{const g=c.groups.find(x=>x.area===area);return g?versionedItems(g):baseItems(area)})}
+export function RotationDeadline({area,compact=false}:{area:RotationArea;compact?:boolean}){const {group,busy,error,refresh}=useRotation(area);const [now,setNow]=useState(Date.now());useEffect(()=>{const t=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(t)},[]);
+ const minutes=group?Math.max(0,Math.ceil((new Date(group.dueAt).getTime()-now)/60000)):0;const label=minutes>=1440?`${Math.floor(minutes/1440)}d ${Math.floor(minutes%1440/60)}u`:`${Math.floor(minutes/60)}u ${minutes%60}m`;
+ return <div className={'rotation-status '+(compact?'compact':'')}><span>{group?.versionId?'✦ AI-editie':'Basisversie'} · {rotationLabels[area]}</span>{group&&<time dateTime={group.dueAt} title={new Date(group.dueAt).toLocaleString('nl-NL',{timeZone:'Europe/Amsterdam'})}>Nieuwe editie over {label} · {new Date(group.dueAt).toLocaleDateString('nl-NL',{timeZone:'Europe/Amsterdam'})}</time>}{busy===area?<small role="status">AI maakt de nieuwe editie… Je kunt alvast oefenen.</small>:group?.pending?<small>{group.warning||'Nieuwe AI-editie wordt voorbereid. Je beschikbare versie blijft bruikbaar.'}</small>:null}{!compact&&error&&<small role="alert">{error} <button className="text-button" onClick={refresh}>Opnieuw laden</button></small>}</div>
+}

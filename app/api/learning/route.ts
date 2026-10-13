@@ -1,3 +1,4 @@
+import {atelierTaskSchema} from '@/lib/rotation-schema';
 import {z} from 'zod';
 import {database,identity,fail} from '@/lib/server';
 import {focuses, type LearningState} from '@/lib/learning';
@@ -5,7 +6,7 @@ import {assess,adaptiveAdvice,validateAnswers,parseWritingReview,type Assessment
 const id=z.string().uuid();
 const date=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(s=>{const d=new Date(s+'T12:00:00Z');return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===s});
 const planSchema=z.object({goal:z.string().trim().min(5).max(1000),focus:z.enum(focuses),aiReason:z.string().max(1000),tasks:z.array(z.object({id,title:z.string().trim().min(3).max(160),date,minutes:z.number().int().min(5).max(120),done:z.boolean(),destination:z.enum(['grammar','atelier','content','missions']),focus:z.enum(focuses)})).min(1).max(14)}).refine(p=>new Set(p.tasks.map(t=>t.id)).size===p.tasks.length);
-const entrySchema=z.object({id,kind:z.enum(['beeldverhaal','leesclub','samen','tijdreis']),title:z.string().trim().min(1).max(120),topic:z.string().max(300),source:z.string().max(1000),text:z.string().max(8000),reflection:z.string().max(2000),nextStep:z.string().max(1000),drawing:z.array(z.object({color:z.enum(['#98492f','#34382f','#477b55','#566fc5']),points:z.array(z.tuple([z.number().min(0).max(600),z.number().min(0).max(260)])).min(1).max(300)})).max(80),aiHint:z.string().max(2000),completed:z.boolean()});
+const entrySchema=z.object({task:atelierTaskSchema.optional(),id,kind:z.enum(['beeldverhaal','leesclub','samen','tijdreis']),title:z.string().trim().min(1).max(120),topic:z.string().max(300),source:z.string().max(1000),text:z.string().max(8000),reflection:z.string().max(2000),nextStep:z.string().max(1000),drawing:z.array(z.object({color:z.enum(['#98492f','#34382f','#477b55','#566fc5']),points:z.array(z.tuple([z.number().min(0).max(600),z.number().min(0).max(260)])).min(1).max(300)})).max(80),aiHint:z.string().max(2000),completed:z.boolean()});
 async function readState(u:string):Promise<LearningState>{
  const db=database();const [state,entries,checks,evidence]=await Promise.all([
  db.prepare('SELECT plan,draft FROM learning_state WHERE user_id=?').bind(u).first<{plan:string|null;draft:string|null}>(),

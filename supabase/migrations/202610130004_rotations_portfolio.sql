@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS rotation_policies(classroom_id text NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,area text NOT NULL,interval_days integer NOT NULL CHECK(interval_days IN (1,2,7,14,21,30)),created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(classroom_id,area));
+CREATE TABLE IF NOT EXISTS content_rotations(id text PRIMARY KEY,user_id text NOT NULL,area text NOT NULL,context_key text NOT NULL,period_start timestamptz NOT NULL,due_at timestamptz NOT NULL,payload jsonb CHECK(payload IS NULL OR jsonb_typeof(payload)='array'),lease_until timestamptz,last_error text,created_at timestamptz NOT NULL DEFAULT now(),UNIQUE(user_id,area,context_key,period_start));
+CREATE INDEX IF NOT EXISTS content_rotations_owner ON content_rotations(user_id,area,period_start DESC);
+CREATE TABLE IF NOT EXISTS portfolio_items(id text PRIMARY KEY,user_id text NOT NULL,source_key text NOT NULL,title text NOT NULL,kind text NOT NULL,snapshot jsonb NOT NULL CHECK(jsonb_typeof(snapshot)='object'),reflection text NOT NULL DEFAULT '',next_step text NOT NULL DEFAULT '',featured boolean NOT NULL DEFAULT false,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),UNIQUE(user_id,source_key));
+ALTER TABLE rotation_policies ENABLE ROW LEVEL SECURITY; REVOKE ALL ON rotation_policies FROM anon, authenticated;
+ALTER TABLE content_rotations ENABLE ROW LEVEL SECURITY; REVOKE ALL ON content_rotations FROM anon, authenticated;
+ALTER TABLE portfolio_items ENABLE ROW LEVEL SECURITY; REVOKE ALL ON portfolio_items FROM anon, authenticated;

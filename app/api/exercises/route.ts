@@ -1,3 +1,4 @@
+import {rotatedExercise} from '@/lib/server-rotations';
 import {database,identity,fail} from '@/lib/server';
 import {exercises,canComplete,isCorrect,skillFor,type Exercise,type ExerciseData} from '@/lib/exercises';
 export async function GET(r:Request){
@@ -9,6 +10,7 @@ export async function POST(r:Request){
  const u=await identity(r);if(!u)return fail('Log in om op te slaan.',401);
  let body:any;try{body=await r.json()}catch{return fail('Ongeldige invoer.')}
  let ex=exercises.find(e=>e.id===body?.exerciseId);const raw=body?.data;
+ if(!ex&&typeof body?.exerciseId==='string')ex=await rotatedExercise(u,body.exerciseId);
  if(!ex&&typeof body?.exerciseId==='string'){const row=await database().prepare('SELECT exercise FROM generated_exercises WHERE id=? AND user_id=?').bind(body.exerciseId,u).first<{exercise:Exercise}>();ex=row?.exercise||undefined;}
  if(!ex||!raw||typeof body.complete!=='boolean'||!Array.isArray(raw.answers)||!Array.isArray(raw.checks)||typeof raw.text!=='string'||raw.text.length>10000||raw.answers.length>ex.questions.length||raw.checks.length>(ex.writing?.checklist.length||0))return fail('Ongeldige oefening of invoer.');
  if(raw.answers.some((a:unknown,i:number)=>typeof a!=='string'||a.length>250||(a!==''&&ex.questions[i].options&&!ex.questions[i].options?.some((_,n)=>a===String(n))))||raw.checks.some((c:unknown)=>typeof c!=='boolean'))return fail('Controleer je antwoorden.');

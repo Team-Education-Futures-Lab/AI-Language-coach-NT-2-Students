@@ -59,3 +59,15 @@ Er worden geen bestaande lokale leerlingrecords automatisch geüpload. Deze demo
 - `npm run build`: typecheck en Next.js-productiebuild.
 - `npm test`: PostgreSQL-schema, RLS, profiel/coachbehoud, idempotente XP en bescherming van les-eigenaarschap (PGlite).
 - Online: controleer aanmelden, profiel opslaan, een oefening afronden, uitloggen en opnieuw aanmelden. Gebruik twee testaccounts om scheiding van gegevens te controleren.
+
+### Vernieuwende oefenbibliotheek, seizoenen en portfolio
+
+Pas `supabase/migrations/202610130004_rotations_portfolio.sql` toe vóór deze versie. De bestaande beveiligde Supabase-cron blijft dezelfde URL gebruiken. Hij verwerkt afwisselend persoonlijke opdrachten en bibliotheekedities. De ingelogde app vult ontbrekende edities ook achtereenvolgens aan; er is geen betaald model of extra hostingdienst toegevoegd.
+
+Negen groepen vernieuwen standaard iedere zeven dagen: zes bibliotheekvaardigheden (21 oefenplekken, inclusief nieuwe luisterteksten), zes coachsituaties, vier atelieropdrachten en drie spellen met ieder vijf rondes. De docent kan per klas en onderdeel 1, 2, 7, 14, 21 dagen of een kalendermaand instellen. Bij meerdere klassen geldt het kortste ritme. AI genereert en controleert de inhoud, daarna volgt strikte structuurvalidatie. Nieuwe edities krijgen een eigen versie; lopende oefeningen en opgeslagen resultaten houden hun oorspronkelijke inhoud. Bij een gratis quotum of storing blijft de beschikbare versie staan. Vernieuwen is dus niet gegarandeerd op de exacte seconde van de deadline.
+
+Een vernieuwde luisteropdracht gebruikt de Nederlandse spraaksynthese van het apparaat. Een uitgeschreven tekst blijft beschikbaar als er geen Nederlandse stem geïnstalleerd is.
+
+`Mijn taalportfolio` verzamelt eigen teksten en geselecteerde kopieën van eerder leerwerk, gesprekken, tekeningen en spellen. De eigenaar kan reflecteren met AI-hulp, hoogtepunten markeren en de selectie als zelfstandig HTML-document downloaden/afdrukken. Portfoliowerk is privé; alle serverqueries worden op de ingelogde eigenaar begrensd, en de tabellen zijn niet via publieke Supabase REST-rollen toegankelijk.
+
+Automatische vormgeving gebruikt de astronomische seizoenswissels van Astronomy Engine (MIT), op het noordelijk halfrond. Kerst is alleen 24–26 december; nieuwjaar alleen 1 januari in Europe/Amsterdam. De app controleert iedere 30 seconden en bij terugkeer naar de tab. De feestdagen hebben korte decoratieve animaties, respecteren verminderde beweging en bieden eenmaal per feestperiode per jaar 5 XP. De serverdatum bepaalt de beloning; deze XP telt niet mee voor taalniveaus. Handmatige vormgeving blijft mogelijk.

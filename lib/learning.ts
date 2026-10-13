@@ -11,7 +11,7 @@ export const routeGoals:Record<string,{title:string;goal:string;context:string}>
 export type PlanTask={id:string;title:string;date:string;minutes:number;done:boolean;destination:'grammar'|'atelier'|'content'|'missions';focus:Focus};
 export type LearningPlan={goal:string;focus:Focus;tasks:PlanTask[];aiReason:string};
 export type Stroke={color:string;points:[number,number][]};
-export type PortfolioEntry={id:string;kind:'beeldverhaal'|'leesclub'|'samen'|'tijdreis';title:string;topic:string;source:string;text:string;reflection:string;nextStep:string;drawing:Stroke[];aiHint:string;completed:boolean;updatedAt?:string};
+export type PortfolioEntry={task?:import('./rotation-schema').AtelierTask;id:string;kind:'beeldverhaal'|'leesclub'|'samen'|'tijdreis';title:string;topic:string;source:string;text:string;reflection:string;nextStep:string;drawing:Stroke[];aiHint:string;completed:boolean;updatedAt?:string};
 export type LearningState={plan:LearningPlan|null;entries:PortfolioEntry[];assessment:Assessment|null;draft:Record<string,unknown>|null;evidence:Evidence[];advice:{level:string|null;reason:string;evidenceCount:number}};
 export const emptyLearning:LearningState={plan:null,entries:[],assessment:null,draft:null,evidence:[],advice:{level:null,reason:'',evidenceCount:0}};
 export function makePlan(profile:Profile,focus:Focus,date:string):LearningPlan{
