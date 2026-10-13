@@ -11,3 +11,9 @@ export function assignmentPeriod(created:string,days:number,now=new Date()){
  const anchor=new Date(created);if(days===30){let month=(now.getUTCFullYear()-anchor.getUTCFullYear())*12+now.getUTCMonth()-anchor.getUTCMonth();const at=(n:number)=>{const d=new Date(Date.UTC(anchor.getUTCFullYear(),anchor.getUTCMonth()+n,1,anchor.getUTCHours(),anchor.getUTCMinutes(),anchor.getUTCSeconds()));const last=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate();d.setUTCDate(Math.min(anchor.getUTCDate(),last));return d};if(at(month)>now)month--;return {start:at(Math.max(0,month)).toISOString(),due:at(Math.max(0,month)+1).toISOString()}}
  const duration=days*86400000;const start=anchor.getTime()+Math.max(0,Math.floor((now.getTime()-anchor.getTime())/duration))*duration;return {start:new Date(start).toISOString(),due:new Date(start+duration).toISOString()};
 }
+
+export function assignmentView<T>(rows:{exercise:T|null;period_start:string;due_at:string;last_error:string|null}[],period:{start:string;due:string}){
+ const current=rows.find(row=>new Date(row.period_start).getTime()===new Date(period.start).getTime());
+ const available=current?.exercise?current:rows.find(row=>row.exercise);
+ return {exercise:available?.exercise||null,dueAt:current?.exercise?period.due:available?.due_at||period.due,pending:!current?.exercise,warning:current?.last_error||''};
+}
