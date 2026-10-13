@@ -1,0 +1,2 @@
+@font-face{font-family:'Taalcoach Manrope';src:url('/fonts/manrope-variable.ttf') format('truetype');font-weight:200 800;font-style:normal;font-display:swap}
+.tc-landing,.tc-auth{font-family:'Taalcoach Manrope',sans-serif;--glass-line:rgba(255,255,255,.86);--glass-shadow:0 24px 70px #3e49330c,inset 0 1px 0 #fff;--landing-clay:#a7472b}
