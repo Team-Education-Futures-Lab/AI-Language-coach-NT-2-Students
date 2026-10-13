@@ -18,6 +18,8 @@ export function TeacherDashboard(){
   const [name,setName]=useState('');
   const [description,setDescription]=useState('');
   const [email,setEmail]=useState('');
+  const [newName,setNewName]=useState('');
+  const [newDescription,setNewDescription]=useState('');
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
@@ -28,7 +30,7 @@ export function TeacherDashboard(){
   useEffect(()=>{if(!selected&&data.classes[0])setSelected(data.classes[0].id)},[data.classes,selected]);
   function reset(){setName('');setDescription('');setNotice('')}
   async function saveClass(){
-    if(!name.trim())return;
+    if(!newName.trim())return;
     setBusy(true);setError('');try{const next=await call({action:'class_create',name,description});setData(next);setSelected(next.classes.at(-1)?.id||'');reset();setNotice('Klas aangemaakt.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}
   }
   async function updateClass(){
@@ -56,7 +58,7 @@ export function TeacherDashboard(){
       <section className="panel class-list"><div className="section-heading"><div><h2>Mijn klassen</h2><p>{data.classes.length} {data.classes.length===1?'klas':'klassen'}</p></div><Users size={21}/></div>
         {data.classes.map(c=><button key={c.id} className={'class-list-item '+(active?.id===c.id?'active':'')} onClick={()=>setSelected(c.id)}><span><b>{c.name}</b><small>{data.members.filter(m=>m.classroom_id===c.id).length} studenten</small></span><span>›</span></button>)}
         {!data.classes.length&&<p className="muted">Maak je eerste klas aan.</p>}
-        <div className="class-form"><label className="field-label">Nieuwe klasnaam<input value={!active?name:''} onChange={e=>{setName(e.target.value);if(active)setSelected('')}} placeholder="Bijvoorbeeld: NT2 B1 ochtend"/></label><label className="field-label">Beschrijving<textarea rows={3} value={!active?description:''} onChange={e=>setDescription(e.target.value)} placeholder="Optioneel"/></label><button className="primary-button" disabled={busy||!name.trim()||!!active} onClick={saveClass}><Plus size={17}/>Klas toevoegen</button></div>
+        <div className="class-form"><label className="field-label">Nieuwe klasnaam<input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Bijvoorbeeld: NT2 B1 ochtend"/></label><label className="field-label">Beschrijving<textarea rows={3} value={newDescription} onChange={e=>setNewDescription(e.target.value)} placeholder="Optioneel"/></label><button className="primary-button" disabled={busy||!newName.trim()} onClick={saveClass}><Plus size={17}/>Klas toevoegen</button></div>
       </section>
       <section className="panel class-detail">{active?<><div className="section-heading"><div><span className="eyebrow">GESELECTEERDE KLAS</span><h2>{active.name}</h2><p>{members.length} studenten in deze klas</p></div><button className="icon-action" aria-label="Klas verwijderen" onClick={deleteClass}><Trash2 size={18}/></button></div>
         <div className="class-form inline"><label className="field-label">Naam<input value={name} onChange={e=>setName(e.target.value)}/></label><label className="field-label">Beschrijving<textarea rows={2} value={description} onChange={e=>setDescription(e.target.value)}/></label><button className="outline-button" disabled={busy||!name.trim()} onClick={updateClass}><Save size={16}/>Wijzigingen opslaan</button></div>

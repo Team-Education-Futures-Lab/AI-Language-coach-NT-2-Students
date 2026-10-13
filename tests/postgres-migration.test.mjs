@@ -36,3 +36,13 @@ test('another owner cannot replace a lesson with the same ID',async()=>{
 test('Supabase anon and authenticated REST roles cannot read profiles',async()=>{
  for(const role of ['anon','authenticated']){await db.exec(`SET ROLE ${role}`);await assert.rejects(db.query('SELECT * FROM profiles'),/permission denied/);await db.exec('RESET ROLE')}
 });
+test('teacher dashboard only returns students in that teacher’s classes',async()=>{
+ const now='2026-10-13';
+ for(const [id,role] of [['t-one','teacher_admin'],['t-two','teacher_admin'],['s-one','student'],['s-two','student'],['s-private','student']])await db.query('INSERT INTO users(id,email,display_name,role,created_at,updated_at) VALUES($1,$2,$1,$3,$4,$4)',[id,id+'@example.com',role,now]);
+ for(const [id,owner] of [['c-one','t-one'],['c-one-b','t-one'],['c-two','t-two']])await db.query('INSERT INTO classrooms(id,teacher_id,name,description,created_at,updated_at) VALUES($1,$2,$1,\'\',$3,$3)',[id,owner,now]);
+ for(const [classroom,student] of [['c-one','s-one'],['c-one-b','s-one'],['c-two','s-two']])await db.query('INSERT INTO classroom_members(classroom_id,student_id,joined_at) VALUES($1,$2,$3)',[classroom,student,now]);
+ const students=await queryFrom('app/api/teacher/route.ts','SELECT u.id,u.email');
+ const {rows}=await db.query(students,['t-one']);
+ assert.equal(rows.length,1);assert.equal(rows[0].id,'s-one');assert.equal(Number(rows[0].class_count),2);
+ assert.deepEqual((await db.query(students,['unknown'])).rows,[]);
+});

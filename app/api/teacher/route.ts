@@ -7,8 +7,9 @@ async function dashboard(teacherId:string){
     FROM classroom_members cm JOIN classrooms c ON c.id=cm.classroom_id JOIN users u ON u.id=cm.student_id
     WHERE c.teacher_id=? ORDER BY u.display_name`).bind(teacherId).all();
   const students=await db.prepare(`SELECT u.id,u.email,u.display_name,u.role,COUNT(cm.classroom_id) AS class_count
-    FROM users u LEFT JOIN classroom_members cm ON cm.student_id=u.id
-    WHERE u.role='student' GROUP BY u.id,u.email,u.display_name,u.role ORDER BY u.display_name`).all();
+    FROM users u JOIN classroom_members cm ON cm.student_id=u.id
+    JOIN classrooms c ON c.id=cm.classroom_id
+    WHERE u.role='student' AND c.teacher_id=? GROUP BY u.id,u.email,u.display_name,u.role ORDER BY u.display_name`).bind(teacherId).all();
   return {classes:classes.results,members:members.results,students:students.results};
 }
 
