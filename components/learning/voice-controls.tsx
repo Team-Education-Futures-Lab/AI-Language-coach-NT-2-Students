@@ -3,13 +3,14 @@ import {useEffect,useRef,useState} from 'react';
 import {Mic,Phone,PhoneOff,MessageCircle,Volume2,VolumeX,Settings2} from 'lucide-react';
 import {B,useLanguage} from './translation';
 import {bestVoice,coachSpeechSegments,languageName} from '@/lib/learning-language';
-import {localDutchSpeech} from '@/lib/local-tts';
+import {localCoachSpeech} from '@/lib/local-tts';
+import {voiceProfiles,validVoiceProfile,voiceLanguage,type VoiceProfile} from '@/lib/voice-profiles';
 import {PipMascot} from './pip-mascot';
 import type {PipMood} from './pip-mascot';
 type Props={reply:string;replyLanguage?:string;requestError?:string;disabled?:boolean;resetKey:string;onTranscript:(text:string)=>void;onMood?:(mood:PipMood)=>void};
 type Phase='idle'|'opening'|'listening'|'transcribing'|'review'|'waiting'|'preparing'|'speaking';
 export function VoiceControls({reply,replyLanguage,requestError,disabled=false,resetKey,onTranscript,onMood}:Props){
- const {language}=useLanguage();const [mode,setMode]=useState<'type'|'call'>('type');const [rate,setRate]=useState(.95);
+ const {language}=useLanguage();const [mode,setMode]=useState<'type'|'call'>('type');const [rate,setRate]=useState(.95);const [profile,setProfile]=useState<VoiceProfile>('F1'),[engineMode,setEngineMode]=useState<'natural'|'browser'>('natural');
  const [phase,setPhase]=useState<Phase>('idle'),[continuous,setContinuous]=useState(false),[draft,setDraft]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[seconds,setSeconds]=useState(0),[settings,setSettings]=useState(false),[voices,setVoices]=useState<SpeechSynthesisVoice[]>([]),[voiceURI,setVoiceURI]=useState(''),[supported,setSupported]=useState(false);
  const playback=useRef<HTMLAudioElement|null>(null),playbackUrl=useRef(''),synthesis=useRef<AbortController|null>(null);
  const recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),audio=useRef<AudioContext|null>(null),timer=useRef<ReturnType<typeof setInterval>|null>(null),controller=useRef<AbortController|null>(null),sequence=useRef(0),speechSequence=useRef(0),utterance=useRef<SpeechSynthesisUtterance|null>(null),auto=useRef(false),started=useRef(0),lastReply=useRef(reply),waiting=useRef(false),latest=useRef({onTranscript,onMood,disabled});latest.current={onTranscript,onMood,disabled};
@@ -17,6 +18,8 @@ export function VoiceControls({reply,replyLanguage,requestError,disabled=false,r
  function clearPlayback(){const player=playback.current;if(player){player.onended=null;player.onerror=null;player.pause();player.removeAttribute('src');player.load()}if(playbackUrl.current){URL.revokeObjectURL(playbackUrl.current);playbackUrl.current=''}}
  function stopSpeech(){synthesis.current?.abort();synthesis.current=null;clearPlayback();speechSequence.current++;if('speechSynthesis' in window)speechSynthesis.cancel();utterance.current=null}
  function cancel(){sequence.current++;auto.current=false;waiting.current=false;setContinuous(false);controller.current?.abort();if(recorder.current){recorder.current.onstop=null;if(recorder.current.state!=='inactive')recorder.current.stop();recorder.current=null}release();stopSpeech();setPhase('idle')}
+ useEffect(()=>{const sync=()=>{try{const value=localStorage.getItem('taalcoach-voice-profile-v1');if(validVoiceProfile(value)){setProfile(value);setEngineMode('natural')}else if(value==='browser')setEngineMode('browser')}catch{}};sync();window.addEventListener('taalcoach-voice',sync);window.addEventListener('storage',sync);return()=>{window.removeEventListener('taalcoach-voice',sync);window.removeEventListener('storage',sync)}},[]);
+ function chooseProfile(value:string){cancel();if(value==='browser')setEngineMode('browser');else if(validVoiceProfile(value)){setEngineMode('natural');setProfile(value)}try{localStorage.setItem('taalcoach-voice-profile-v1',value);window.dispatchEvent(new Event('taalcoach-voice'))}catch{}}
  useEffect(()=>{setSupported(!!navigator.mediaDevices?.getUserMedia&&typeof MediaRecorder!=='undefined');if(!('speechSynthesis' in window))return;const load=()=>setVoices(speechSynthesis.getVoices());load();speechSynthesis.addEventListener('voiceschanged',load);return()=>speechSynthesis.removeEventListener('voiceschanged',load)},[]);
  useEffect(()=>{cancel();setError('');lastReply.current=reply;return()=>{cancel();latest.current.onMood?.('idle')}},[resetKey,language]);
  useEffect(()=>{if(disabled&&['opening','listening','review'].includes(phase))cancel()},[disabled,phase]);
@@ -25,44 +28,39 @@ export function VoiceControls({reply,replyLanguage,requestError,disabled=false,r
  useEffect(()=>{onMood?.(phase==='listening'?'listening':phase==='speaking'?'speaking':['waiting','transcribing','preparing'].includes(phase)?'thinking':'idle')},[phase,onMood]);
  useEffect(()=>{if(phase!=='waiting')return;const timeout=setTimeout(()=>{cancel();setError('Het antwoord duurt te lang. Je kunt verder typen of het spraakgesprek opnieuw starten.')},50000);return()=>clearTimeout(timeout)},[phase]);
  useEffect(()=>{if(lastReply.current===reply)return;lastReply.current=reply;if(waiting.current&&reply){waiting.current=false;speak(reply)}},[reply]);
- async function speak(text:string){
+ async function speak(text:string,supportLanguage?:string){
   stopSpeech();const g=speechSequence.current;setError('');setNotice('');
   const control=new AbortController();synthesis.current=control;
-  const chunks=coachSpeechSegments(text,replyLanguage||language);
+  const chunks=coachSpeechSegments(text,supportLanguage||replyLanguage||language);
   try{
-   for(const chunk of chunks){
+   if(engineMode==='natural'){
+    setPhase('preparing');
+    const result=await localCoachSpeech(chunks,{profile,rate,signal:control.signal,onProgress:message=>{if(g===speechSequence.current)setNotice(message)}});
     if(g!==speechSequence.current)return;
-    if(chunk.language.split('-')[0]==='nl'&&!voiceURI){
-     setPhase('preparing');
-     try{
-      const result=await localDutchSpeech(chunk.text,{signal:control.signal});
-      if(g!==speechSequence.current)return;
-      await new Promise<void>((resolve,reject)=>{
-       const player=playback.current||new Audio();playback.current=player;
-       playbackUrl.current=URL.createObjectURL(result.file);player.src=playbackUrl.current;player.playbackRate=rate;player.preservesPitch=true;
-       const abort=()=>finish(new DOMException('Geannuleerd','AbortError'));
-       const finish=(error?:unknown)=>{control.signal.removeEventListener('abort',abort);clearPlayback();error?reject(error):resolve()};
-       player.onended=()=>finish();player.onerror=()=>finish(Error('Audio afspelen mislukt'));
-       control.signal.addEventListener('abort',abort,{once:true});
-       setPhase('speaking');void player.play().catch(finish);
-      });
-      continue;
-     }catch(e){if(control.signal.aborted)return;setNotice('De lokale stem is niet beschikbaar. Ik gebruik tijdelijk de browserstem.')}
-    }
+    await new Promise<void>((resolve,reject)=>{
+     const player=playback.current||new Audio();playback.current=player;
+     playbackUrl.current=URL.createObjectURL(result.file);player.src=playbackUrl.current;player.playbackRate=1;player.preservesPitch=true;
+     let settled=false;const abort=()=>finish(new DOMException('Geannuleerd','AbortError'));
+     const finish=(error?:unknown)=>{if(settled)return;settled=true;control.signal.removeEventListener('abort',abort);if(g===speechSequence.current)clearPlayback();error?reject(error):resolve()};
+     player.onended=()=>finish();player.onerror=()=>finish(Error('Audio afspelen mislukt'));
+     control.signal.addEventListener('abort',abort,{once:true});setNotice('');setPhase('speaking');void player.play().catch(finish);
+    });
+   }else for(const chunk of chunks){
+    if(g!==speechSequence.current)return;
     if(!('speechSynthesis' in window))throw Error('Deze browser heeft geen voorleesstem. Je kunt het antwoord lezen.');
     const voice=bestVoice(speechSynthesis.getVoices(),chunk.language,chunk.language==='nl'?voiceURI:'');
     if(!voice)throw Error('Geen stem beschikbaar voor '+languageName(chunk.language)+'. Je kunt het antwoord lezen of een systeemstem toevoegen in je apparaatinstellingen.');
     setPhase('speaking');
     await new Promise<void>((resolve,reject)=>{
      const u=new SpeechSynthesisUtterance(chunk.text);utterance.current=u;u.lang=voice.lang;u.voice=voice;u.rate=rate;u.pitch=.98;
-     const abort=()=>finish(new DOMException('Geannuleerd','AbortError'));
-     const finish=(error?:unknown)=>{control.signal.removeEventListener('abort',abort);u.onend=null;u.onerror=null;utterance.current=null;error?reject(error):resolve()};
+     let settled=false;const abort=()=>finish(new DOMException('Geannuleerd','AbortError'));
+     const finish=(error?:unknown)=>{if(settled)return;settled=true;control.signal.removeEventListener('abort',abort);u.onend=null;u.onerror=null;if(g===speechSequence.current)utterance.current=null;error?reject(error):resolve()};
      u.onend=()=>finish();u.onerror=e=>finish(Error(e.error));control.signal.addEventListener('abort',abort,{once:true});
      speechSynthesis.resume();speechSynthesis.speak(u);
     });
    }
    if(g!==speechSequence.current)return;setPhase('idle');if(auto.current)void record(true);
-  }catch(e){if(g!==speechSequence.current)return;cancel();setError((e as Error).message)}
+  }catch(e){if(g!==speechSequence.current)return;cancel();setNotice('');setError((e as Error).message)}
  }
  async function record(isAuto=false){
   if(latest.current.disabled){cancel();return;}
@@ -95,6 +93,6 @@ export function VoiceControls({reply,replyLanguage,requestError,disabled=false,r
  <div className="voice-actions">{mode==='type'&&<button type="button" disabled={!supported||disabled||!['idle','review'].includes(phase)} onClick={()=>void record()}><Mic size={17}/><B>Spreek één bericht</B></button>}<button type="button" disabled={!reply||!['idle','preparing','speaking'].includes(phase)} aria-label={['preparing','speaking'].includes(phase)?'Stop voorlezen':'Lees het antwoord voor'} onClick={()=>['preparing','speaking'].includes(phase)?cancel():void speak(reply)}>{['preparing','speaking'].includes(phase)?<VolumeX size={17}/>:<Volume2 size={17}/>}<B>{['preparing','speaking'].includes(phase)?'Stop':'Voorlezen'}</B></button><button type="button" aria-label="Spraakinstellingen" aria-expanded={settings} onClick={()=>setSettings(v=>!v)}><Settings2 size={17}/></button></div>
  {phase==='opening'&&mode==='type'&&<p role="status"><B>Microfoon openen…</B></p>}{phase==='listening'&&<p role="status"><B>Ik luister</B> · {seconds}s <button type="button" onClick={()=>recorder.current?.state==='recording'&&recorder.current.stop()}><B>Klaar met spreken</B></button></p>}{phase==='transcribing'&&mode==='type'&&<p role="status"><B>Je spraak omzetten…</B></p>}{phase==='waiting'&&<p role="status" dir="auto">“{draft}”</p>}{phase==='speaking'&&continuous&&<button type="button" onClick={()=>void record(true)}><Mic size={15}/><B>Ik wil reageren</B></button>}
  {phase==='review'&&<div className="voice-review"><label><B>Dit verstond ik</B><textarea dir="auto" rows={2} maxLength={1000} value={draft} onChange={e=>setDraft(e.target.value)}/></label><button type="button" className="primary-button" disabled={!draft.trim()||disabled} onClick={()=>{waiting.current=true;setPhase('waiting');onTranscript(draft)}}><B>Versturen</B></button><button type="button" onClick={cancel}><B>Annuleren</B></button></div>}{phase!=='idle'&&!continuous&&phase!=='review'&&<button type="button" onClick={cancel}><B>Annuleren</B></button>}
- {phase==='preparing'&&mode==='type'&&<p role="status"><B>De lokale stem maakt je audio… De eerste keer kan dit langer duren.</B></p>}{notice&&<p role="status"><B>{notice}</B></p>}{error&&<p role="alert" className="voice-error"><B>{error}</B></p>}{!supported&&<p className="voice-error"><B>Spraakopname is in deze browser niet beschikbaar. Je kunt blijven typen.</B></p>}{settings&&<div className="voice-settings"><label><B>Nederlandse stem</B><select value={voiceURI} onChange={e=>setVoiceURI(e.target.value)}><option value="">Lokale Nederlandse Piper-stem</option>{voices.filter(v=>v.lang.startsWith('nl')).map(v=><option value={v.voiceURI} key={v.voiceURI}>{v.name}</option>)}</select></label><label><B>Tempo</B><select value={rate} onChange={e=>setRate(Number(e.target.value))}><option value={.85}>Rustig</option><option value={.95}>Natuurlijk</option><option value={1.05}>Vlot</option></select></label><p><B>De Nederlandse stem wordt bij het eerste gebruik gedownload en waar mogelijk op dit apparaat bewaard. Andere talen gebruiken de beschikbare browserstem. Het tempo geldt voor beide stemmen.</B></p><p><B>De coach wisselt automatisch tussen de beschikbare stemmen voor jouw taal en Nederlands. De stemkwaliteit hangt af van je browser en apparaat. Je kunt het antwoord onderbreken. Een gesprek duurt maximaal 3 minuten.</B></p><a href="/spraaklicenties.txt" target="_blank" rel="noreferrer"><B>Stemlicenties</B></a></div>}<small><B>Je microfoon gaat alleen aan wanneer je start. Groq verwerkt je opname. Typen blijft mogelijk.</B></small>
+ {phase==='preparing'&&mode==='type'&&<p role="status"><B>De lokale stem maakt je audio… De eerste keer kan dit langer duren.</B></p>}{notice&&<p role="status"><B>{notice}</B></p>}{error&&<p role="alert" className="voice-error"><B>{error}</B></p>}{!supported&&<p className="voice-error"><B>Spraakopname is in deze browser niet beschikbaar. Je kunt blijven typen.</B></p>}{settings&&<div className="voice-settings"><label><B>Stemprofiel</B><select value={engineMode==='browser'?'browser':profile} onChange={e=>chooseProfile(e.target.value)}><optgroup label="Vrouwelijk">{voiceProfiles.filter(v=>v.id.startsWith('F')).map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</optgroup><optgroup label="Mannelijk">{voiceProfiles.filter(v=>v.id.startsWith('M')).map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</optgroup><option value="browser">Browserstem (kan per taal verschillen)</option></select></label><button type="button" disabled={phase!=='idle'} onClick={()=>void speak('Hallo! Vandaag oefenen we samen Nederlands. Wat wil je vandaag leren?','nl')}><Volume2 size={16}/><B>Beluister stem</B></button>{engineMode==='browser'&&<label><B>Nederlandse browserstem</B><select value={voiceURI} onChange={e=>{cancel();setVoiceURI(e.target.value)}}><option value="">Automatisch</option>{voices.filter(v=>v.lang.startsWith('nl')).map(v=><option value={v.voiceURI} key={v.voiceURI}>{v.name}</option>)}</select></label>}<label><B>Tempo</B><select value={rate} onChange={e=>{cancel();setRate(Number(e.target.value))}}><option value={.85}>Rustig</option><option value={.95}>Natuurlijk</option><option value={1.05}>Vlot</option></select></label><p><B>Eén stemprofiel voor Nederlands en 30 andere ondersteunde talen. Je keuze wordt op dit apparaat bewaard. De eerste keer wordt circa 400 MB geladen; daarna gebruikt de stem waar mogelijk de browsercache.</B></p>{!voiceLanguage(language)&&engineMode==='natural'&&<p role="status"><B>Jouw gekozen taal wordt nog niet ondersteund door deze vaste stem. Kies de browserstem om die taal voor te lezen; de stem kan dan per taal verschillen.</B></p>}<a href="/spraaklicenties.txt" target="_blank" rel="noreferrer"><B>Ondersteunde talen en stemlicenties</B></a></div>}<small><B>Je microfoon gaat alleen aan wanneer je start. Groq verwerkt je opname. Typen blijft mogelijk.</B></small>
  </div>;
 }

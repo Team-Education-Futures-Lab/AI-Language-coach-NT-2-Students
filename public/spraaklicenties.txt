@@ -1,12 +1,21 @@
-AI Taalcoach – lokale Nederlandse stem
+AI Taalcoach – vaste meertalige stemprofielen
 
-Piper TTS Web 1.1.2, Jonas Plamann: MIT
-https://github.com/Poket-Jony/piper-tts-web
-De pakketlicentie is beschikbaar op /piper/LICENSE.txt.
+Supertonic 3, Supertone Inc. (2026), model onder OpenRAIL-M.
+Model, configuratie en stemmen F1–F5/M1–M5 ongewijzigd:
+https://huggingface.co/supertone-oss-archive/supertonic-3/tree/aafc6e32416a594460b32413efc49d7fe4ce6d46
+Volledige modellicentie en gebruiksbeperkingen: /vendor/supertonic/LICENSE-model.txt
 
-Stem: nl_NL-mls-medium (speaker 0), rhasspy/piper-voices, Michael Hansen.
-https://huggingface.co/rhasspy/piper-voices/blob/5041a7a49ae5b3a0f30e6837769eb03fdbb231bd/nl/nl_NL/mls/medium/MODEL_CARD
-Dataset: Multilingual LibriSpeech, Pratap et al., OpenSLR 94, CC BY 4.0.
-https://www.openslr.org/94/
-https://creativecommons.org/licenses/by/4.0/
-Model ongewijzigd; de app past alleen het afspeeltempo aan.
+Referentiecode onder MIT, upstream commit 1e9799e964ea4c0dad7cde993b65c3c813a7b373:
+https://github.com/supertone-oss-archive/supertonic
+Aanpassing in helper.js: lokale runtime-import. Eigen worker verzorgt caching en audio-overgangen.
+Code-licentie: /vendor/supertonic/LICENSE-code.txt
+ONNX Runtime 1.22.0, Microsoft, MIT: /vendor/supertonic/LICENSE-onnx.txt
+
+Ondersteunde talen:
+Arabisch, Bulgaars, Deens, Duits, Engels, Estisch, Fins, Frans, Grieks,
+Hindi, Hongaars, Indonesisch, Italiaans, Japans, Koreaans, Kroatisch,
+Lets, Litouws, Nederlands, Oekraïens, Pools, Portugees, Roemeens,
+Russisch, Sloveens, Slowaaks, Spaans, Tsjechisch, Turks, Vietnamees, Zweeds.
+
+Andere talen kunnen alleen met de expliciet gekozen browserstem worden voorgelezen.
+Daarbij kan de stem per taal verschillen. Stemkwaliteit en rekensnelheid verschillen per apparaat.

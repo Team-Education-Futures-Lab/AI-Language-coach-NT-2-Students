@@ -2,26 +2,31 @@
 
 De actuele installatie-, inlog- en database-instructies staan in [README.md](README.md). Deze branch gebruikt PostgreSQL en Supabase Auth; de oude lokale Sites/D1-login is hier niet actief.
 
-## Lokale Nederlandse spraak
+## Vaste meertalige stemprofielen
 
-De coach gebruikt standaard Piper TTS Web 1.1.2 met `nl_NL-mls-medium`, speaker 0.
-Nederlandse passages worden op het apparaat in hun geheel als WAV gegenereerd.
-Bij het eerste gebruik worden runtime en model automatisch geladen. Modelbestanden
-worden waar mogelijk in de browsercache bewaard; privéstand, weinig opslag of het
-wissen van websitegegevens kunnen een nieuwe download veroorzaken. Tekst en
-gegenereerde audio worden hiervoor niet naar een AI-dienst gestuurd. De drie
-recentste audiofragmenten blijven alleen tijdelijk in het geheugen.
+De coach gebruikt Supertonic 3 met vijf vrouwelijke (F1–F5) en vijf mannelijke
+(M1–M5) vaste profielen. Hetzelfde profiel wordt gebruikt voor alle Nederlandse
+voorbeeldzinnen en alle ondersteunde moedertaalpassages. Audio wordt vooraf in
+één WAV samengevoegd, met korte vloeiende overgangen, en met één speler afgespeeld.
+Het tempo wordt bij de synthese toegepast, zonder pitchverschuiving.
 
-Andere talen en expliciet gekozen systeemstemmen gebruiken browser-TTS. Bij een
-Piper-fout volgt een zichtbare melding en browserfallback. Annuleren stopt audio
-en generatie; een fout maakt een nieuwe engine bij de volgende poging mogelijk.
-Het tempo geldt ook voor Piper (pitchbehoud); de browserpitch 0,98 geldt alleen
-voor browserstemmen. De stemkwaliteit verschilt per taal en apparaat.
+Het model ondersteunt 31 talen, waaronder Nederlands, Engels, Arabisch en Turks.
+Niet ondersteunde talen, zoals Perzisch, worden expliciet gemeld; de app probeert
+ze niet met een verkeerd taalmodel uit te spreken. Browser-TTS is uitsluitend een
+handmatig gekozen alternatief en kan per taal van stem veranderen. Er is geen
+stilzwijgende fallback en er is geen betaalde API nodig.
 
-`scripts/prepare-speech.mjs` kopieert de vastgelegde dependency ongewijzigd naar
-`public/onnx`, `public/piper`, `public/worker` en `public/vendor/piper`. Deze
-bestanden worden bij dev/build gemaakt, niet gecommit. De grote upstream ES-module
-wordt pas bij afspelen als statische module geladen, zodat Next deze niet opnieuw
-transformeert. De upstream `eval`-plaatsen horen bij optionele CommonJS/Node-
-compatibiliteit; er wordt geen eval op studentinvoer uitgevoerd en geen CSP versoepeld.
-Attributie en bronverwijzingen: `/spraaklicenties.txt`.
+De eerste download bedraagt circa 400 MB en wordt waar mogelijk via Cache Storage
+bewaard. Studenttekst en audio blijven lokaal. Tijdelijke audio wordt alleen in
+het geheugen hergebruikt, met aparte cachekeys voor tekst, taal, profiel en tempo.
+Annuleren of een workerfout ruimt de worker op; opnieuw proberen start een nieuwe.
+De profielkeuze wordt lokaal opgeslagen en gedeeld tussen coachvensters.
+
+Model: supertone-oss-archive/supertonic-3, revision
+`aafc6e32416a594460b32413efc49d7fe4ce6d46` (OpenRAIL-M).
+Referentie-inferentie: supertone-oss-archive/supertonic, commit
+`1e9799e964ea4c0dad7cde993b65c3c813a7b373` (MIT); helper.js is opgenomen met
+alleen een aangepast runtime-importpad. De oorspronkelijke repository is gearchiveerd.
+ONNX Runtime Web 1.22.0 wordt bij dev/build naar public/vendor/voice gekopieerd.
+De daadwerkelijke synthese draait in een worker en blokkeert de interface niet.
+Bronnen, ondersteunde talen en licenties staan op `/spraaklicenties.txt`.

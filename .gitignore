@@ -54,3 +54,4 @@ next-env.d.ts
 /public/piper/
 /public/worker/
 /public/vendor/piper/
+/public/vendor/voice/
