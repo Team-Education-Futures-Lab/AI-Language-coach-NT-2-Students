@@ -1,0 +1,12 @@
+AI Taalcoach – lokale Nederlandse stem
+
+Piper TTS Web 1.1.2, Jonas Plamann: MIT
+https://github.com/Poket-Jony/piper-tts-web
+De pakketlicentie is beschikbaar op /piper/LICENSE.txt.
+
+Stem: nl_NL-mls-medium (speaker 0), rhasspy/piper-voices, Michael Hansen.
+https://huggingface.co/rhasspy/piper-voices/blob/5041a7a49ae5b3a0f30e6837769eb03fdbb231bd/nl/nl_NL/mls/medium/MODEL_CARD
+Dataset: Multilingual LibriSpeech, Pratap et al., OpenSLR 94, CC BY 4.0.
+https://www.openslr.org/94/
+https://creativecommons.org/licenses/by/4.0/
+Model ongewijzigd; de app past alleen het afspeeltempo aan.

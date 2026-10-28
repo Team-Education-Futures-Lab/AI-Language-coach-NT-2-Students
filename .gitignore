@@ -49,3 +49,8 @@ next-env.d.ts
 /public/vendor/speech/
 
 !.env.example
+
+/public/onnx/
+/public/piper/
+/public/worker/
+/public/vendor/piper/
