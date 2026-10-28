@@ -2,7 +2,7 @@ import * as ort from '/vendor/voice/ort.wasm.min.mjs';
 import {TextToSpeech,UnicodeProcessor,Style,writeWavFile} from './helper.js';
 const BASE='https://huggingface.co/supertone-oss-archive/supertonic-3/resolve/aafc6e32416a594460b32413efc49d7fe4ce6d46/';
 ort.env.wasm.wasmPaths='/vendor/voice/';ort.env.wasm.numThreads=1;
-let engine=null,completed=0,cacheAvailable=true;const styles=new Map(),TOTAL=16;
+let engine=null,completed=0,cacheAvailable=true;const styles=new Map(),cancelled=new Set(),TOTAL=16;
 function status(id,phase,message,detail=""){postMessage({id,status:{phase,message,detail,completed,total:TOTAL,cached:cacheAvailable}})}
 async function asset(path,id){
  const url=BASE+path;let cache;try{cache=await caches.open('taalcoach-supertonic3-v1')}catch{cacheAvailable=false}
@@ -43,22 +43,41 @@ async function styleFor(profile,id){
  const style=new Style(new ort.Tensor('float32',Float32Array.from(data.style_ttl.data.flat(Infinity)),data.style_ttl.dims),new ort.Tensor('float32',Float32Array.from(data.style_dp.data.flat(Infinity)),data.style_dp.dims));
  styles.set(profile,style);return style;
 }
+// Start with a short natural sentence, then prepare subsequent passages while it plays.
+function speechChunks(parts){
+ const chunks=[];
+ for(const part of parts){
+  const sentences=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter(part.language,{granularity:'sentence'}).segment(part.text)].map(x=>x.segment):part.text.match(/[^.!?。！？]+[.!?。！？]*/gu)||[part.text];
+  for(const sentence of sentences){
+   let rest=sentence.trim();
+   while(rest){const limit=chunks.length?180:110;let cut=rest.length;
+    if(cut>limit){cut=rest.lastIndexOf(' ',limit);if(cut<limit/2)cut=limit;const code=rest.charCodeAt(cut-1);if(code>=0xd800&&code<=0xdbff)cut--}
+    chunks.push({text:rest.slice(0,cut).trim(),language:part.language});rest=rest.slice(cut).trim();
+   }
+  }
+ }
+ return chunks;
+}
 self.onmessage=async({data:{id,type,parts,profile,rate}})=>{
+ if(type==='cancel'){cancelled.add(id);return}
+ const check=()=>{if(cancelled.has(id))throw new DOMException('Geannuleerd','AbortError')};
  try{
-  const tts=await initialize(id);
+  const tts=await initialize(id);check();
   if(type==='preload'){postMessage({id,ready:true});return}
-  const style=await styleFor(profile,id),clips=[];
-  for(const [i,part] of parts.entries()){
-   postMessage({id,progress:'Audio maken op je apparaat. De stemmen zijn al geladen…'});
-   const {wav}=await tts.call(part.text,part.language,style,16,rate,.15);
+  const style=await styleFor(profile,id),clips=[],chunks=speechChunks(parts),gap=Math.round(tts.sampleRate*.15);
+  for(const [i,part] of chunks.entries()){
+   check();postMessage({id,progress:'Audio maken op je apparaat. De stemmen zijn al geladen…'});
+   // Eight steps match the official Supertonic 3 browser demo's default.
+   const {wav}=await tts.call(part.text,part.language,style,8,rate,.15,check);check();
    if(!wav.length||wav.some(x=>!Number.isFinite(x))||wav.length>tts.sampleRate*180)throw Error('Ongeldige audio ontvangen. Probeer een korter antwoord.');
    const fade=Math.min(Math.floor(tts.sampleRate*.005),Math.floor(wav.length/2));
    for(let j=0;j<fade;j++){wav[j]*=j/fade;wav[wav.length-1-j]*=j/fade}
-   clips.push(wav);
+   const pcm=new Float32Array(wav.length+(i<chunks.length-1?gap:0));pcm.set(wav);clips.push(pcm);
+   const chunk=pcm.slice();postMessage({id,chunk,sampleRate:tts.sampleRate},[chunk.buffer]);
   }
-  const gap=Math.round(tts.sampleRate*.15),size=clips.reduce((n,c)=>n+c.length,0)+Math.max(0,clips.length-1)*gap;
-  const joined=new Float32Array(size);let offset=0;
-  for(const clip of clips){joined.set(clip,offset);offset+=clip.length+gap}
+  const joined=new Float32Array(clips.reduce((n,c)=>n+c.length,0));let offset=0;
+  for(const clip of clips){joined.set(clip,offset);offset+=clip.length}
   const wav=writeWavFile(joined,tts.sampleRate);postMessage({id,wav},[wav]);
- }catch(e){postMessage({id,error:e.message||'Stem maken is mislukt.'})}
+ }catch(e){postMessage(e.name==='AbortError'?{id,cancelled:true}:{id,error:e.message||'Stem maken is mislukt.'})}
+ finally{cancelled.delete(id)}
 };

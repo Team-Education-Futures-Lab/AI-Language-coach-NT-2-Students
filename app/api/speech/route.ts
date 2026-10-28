@@ -12,6 +12,6 @@ export async function POST(r:Request){const u=await identity(r);if(!u)return fai
  if(!result.ok)return fail(result.status===429?'De gratis spraaklimiet is bereikt. Probeer later opnieuw.':'Spraakherkenning is tijdelijk niet bereikbaar.',result.status===429?429:503);
  const j=await result.json() as {text?:string;duration?:number;segments?:{no_speech_prob?:number}[]};
  if((j.duration||0)>40)return fail('Spreek maximaal 30 seconden per beurt.');
- if(!j.text?.trim()||j.segments?.every(s=>(s.no_speech_prob||0)>.8))return fail('Ik kon geen duidelijke spraak verstaan. Probeer het nog eens.');
+ if(!j.text?.trim()||(j.segments?.length&&j.segments.every(s=>(s.no_speech_prob||0)>.8)))return fail('Ik kon geen duidelijke spraak verstaan. Probeer het nog eens.');
  return Response.json({text:j.text.trim().slice(0,1000)});
  }catch(e){return fail(e instanceof AIError?e.message:'Je opname kon niet worden verwerkt. Probeer opnieuw.',e instanceof AIError?e.status:503)}}

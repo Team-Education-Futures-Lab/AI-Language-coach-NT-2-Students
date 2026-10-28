@@ -78,3 +78,13 @@ html[dir=rtl] .message.user{align-self:flex-end}
 @keyframes voice-preload-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.voice-preload .voice-preload-icon{animation:none}}
 .voice-preload-count{display:block;font-variant-numeric:tabular-nums;opacity:.75}
+.coach-support-picker{position:relative;margin:.5rem 0;font-size:.85rem;min-width:0}
+.coach-support-picker>.outline-button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.coach-support-options{padding:.8rem;border:1px solid var(--border);border-radius:14px;background:var(--card);display:grid;gap:.7rem}
+.coach-support-options label{display:grid;gap:.4rem}.coach-support-options input{width:100%;min-width:0;padding:.5rem;border:1px solid var(--border);border-radius:8px}
+.coach-support-list{max-height:180px;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.3rem}
+.coach-support-list button{padding:.45rem;text-align:start;border-radius:7px;overflow-wrap:anywhere}.coach-support-list button[aria-pressed=true]{background:var(--primary);color:var(--primary-foreground)}
+.pip-help-panel>.coach-support-picker{padding:0 .9rem}
+.voice-read-toggle[aria-pressed=true]{background:var(--primary);color:var(--primary-foreground)}
+.voice-mic-feedback{display:grid;gap:.45rem;padding:.65rem;border:1px solid var(--border);border-radius:12px}.voice-mic-feedback>div{display:flex;align-items:center;gap:.4rem}
+.voice-mic-feedback meter{width:100%;height:12px}.voice-mic-feedback button{justify-self:start}.voice-settings>small{grid-column:1 / -1}

@@ -58,3 +58,10 @@ test('natural Dutch voices outrank ordinary voices while explicit selection is r
  assert.equal(bestVoice(voices,'en','ms').voiceURI,'en');
  assert.equal(bestVoice(voices,'ar'),undefined);
 });
+
+test('coach support accepts a searchable international catalogue, regional codes and custom language names',()=>{
+ const {languages}=loader()('lib/profile.ts');assert.ok(languages.length>=180);
+ assert.equal(normalizeLanguage('Turkish'),'tr');assert.equal(normalizeLanguage('Arabisch'),'ar');assert.equal(normalizeLanguage('pt-BR'),'pt');
+ assert.equal(normalizeLanguage('Tigrinya'),'ti');assert.equal(normalizeLanguage('Papiaments'),'Papiaments');
+ assert.match(tutorLanguageInstruction('tr'),/Türkçe/);assert.match(tutorLanguageInstruction('tr'),/Never default to English/);
+});

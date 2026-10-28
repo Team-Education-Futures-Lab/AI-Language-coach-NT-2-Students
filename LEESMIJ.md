@@ -6,8 +6,9 @@ De actuele installatie-, inlog- en database-instructies staan in [README.md](REA
 
 De coach gebruikt Supertonic 3 met vijf vrouwelijke (F1–F5) en vijf mannelijke
 (M1–M5) vaste profielen. Hetzelfde profiel wordt gebruikt voor alle Nederlandse
-voorbeeldzinnen en alle ondersteunde moedertaalpassages. Audio wordt vooraf in
-één WAV samengevoegd, met korte vloeiende overgangen, en met één speler afgespeeld.
+voorbeeldzinnen en alle ondersteunde moedertaalpassages. Audio wordt per korte passage vooruit berekend en op één Web Audio-klok
+aaneengesloten afgespeeld, met zachte randen. De eerste passage kan al spelen
+terwijl de rest wordt gemaakt. Voor herhaald afspelen wordt ook één WAV bewaard.
 Het tempo wordt bij de synthese toegepast, zonder pitchverschuiving.
 
 Het model ondersteunt 31 talen, waaronder Nederlands, Engels, Arabisch en Turks.
@@ -25,7 +26,7 @@ cache-write meldt de app dat bestanden niet kunnen worden bewaard. Browserdata
 wissen, privémodus en opslagtekort kunnen een nieuwe download nodig maken. Studenttekst en audio blijven lokaal. Tijdelijke audio wordt alleen in
 het geheugen hergebruikt, met aparte cachekeys voor tekst, taal, profiel en tempo.
 Annuleren stopt het afspelen direct, maar bewaart de geladen spraakmotor: de
-lopende berekening wordt stil afgerond voordat een volgend verzoek start. Een
+lopende berekening stopt bij een veilige modelstap voordat een volgend verzoek start. Een
 workerfout of timeout ruimt de worker wel op. Voorladen is gedeeld en wordt niet
 afgebroken bij het sluiten van de chat. Nieuwe tekst vraagt nog lokale rekentijd.
 De profielkeuze wordt lokaal opgeslagen en gedeeld tussen coachvensters.
@@ -38,3 +39,19 @@ alleen een aangepast runtime-importpad. De oorspronkelijke repository is gearchi
 ONNX Runtime Web 1.22.0 wordt bij dev/build naar public/vendor/voice gekopieerd.
 De daadwerkelijke synthese draait in een worker en blokkeert de interface niet.
 Bronnen, ondersteunde talen en licenties staan op `/spraaklicenties.txt`.
+
+
+### Gesprek, uitlegtaal en automatisch voorlezen
+De coach heeft een eigen zoekbare uitlegtaal (meer dan 180 suggesties plus vrije
+invoer), onafhankelijk van de interface. Deze keuze wordt lokaal bewaard en naar
+de tutor gestuurd. De tekstkwaliteit hangt af van de gekozen taal; lokale spraak
+blijft beperkt tot de 31 modeltalen. Er is geen stilzwijgende verkeerde uitspraak.
+Voorlezen is een bewaarde aan/uitstand en leest nieuwe coachantwoorden automatisch.
+Zichtbare antwoorden worden bij uitgeschakeld voorlezen alvast voorbereid; opnieuw
+afspelen gebruikt de audiocache. De synthese gebruikt 8 stappen, overeenkomstig de
+standaard van de officiële Supertonic 3-browserdemo. Volledig directe audio is niet
+gegarandeerd: apparaat, tekstlengte en modelinitialisatie bepalen de wachttijd.
+De microfoon heeft een geluidsmeter, apparaatkeuze en een lokale test zonder upload.
+De detectie herkent zachte spraak en beëindigt de beurt na een natuurlijke pauze.
+Opnemen hangt niet meer af van een hervatte AudioContext; handmatig stoppen blijft
+mogelijk. Een echte spraakbeurt wordt nog steeds door Groq getranscribeerd.
