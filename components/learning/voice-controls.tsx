@@ -16,6 +16,7 @@ export function VoiceControls({reply,replyLanguage,requestError,disabled=false,r
  function cancel(){sequence.current++;auto.current=false;waiting.current=false;setContinuous(false);controller.current?.abort();if(recorder.current){recorder.current.onstop=null;if(recorder.current.state!=='inactive')recorder.current.stop();recorder.current=null}release();stopSpeech();setPhase('idle')}
  useEffect(()=>{setSupported(!!navigator.mediaDevices?.getUserMedia&&typeof MediaRecorder!=='undefined');if(!('speechSynthesis' in window))return;const load=()=>setVoices(speechSynthesis.getVoices());load();speechSynthesis.addEventListener('voiceschanged',load);return()=>speechSynthesis.removeEventListener('voiceschanged',load)},[]);
  useEffect(()=>{cancel();setError('');lastReply.current=reply;return()=>{cancel();latest.current.onMood?.('idle')}},[resetKey,language]);
+ useEffect(()=>{if(disabled&&['opening','listening','review'].includes(phase))cancel()},[disabled,phase]);
  useEffect(()=>{if(requestError){cancel();setError(requestError)}},[requestError]);
  useEffect(()=>{const hide=()=>{if(document.hidden)cancel()};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide)},[]);
  useEffect(()=>{onMood?.(phase==='listening'?'listening':phase==='speaking'?'speaking':['waiting','transcribing'].includes(phase)?'thinking':'idle')},[phase,onMood]);

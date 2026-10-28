@@ -4,7 +4,7 @@ const terms:Record<string,Record<string,string>>={
  fa:{'Mijn leerplek':'فضای یادگیری من','Oefeningen':'تمرین‌ها','AI-coach':'مربی هوش مصنوعی','Leeshoek':'گوشهٔ مطالعه','Mijn voortgang':'پیشرفت من','Woordenboek':'واژه‌نامه','Spelling':'املا','Begrijpend lezen':'درک مطلب','Luisteren':'شنیدن','Schrijven':'نوشتن','Formuleren':'بیان و جمله‌بندی','Alles':'همه','Niveau':'سطح','Bekijk of herhaal':'مرور یا تکرار','Begin oefening':'شروع تمرین','EVEN IETS ANDERS':'کمی تنوع','Ook ontspannen is leren.':'استراحت هم فرصتی برای یادگیری است.','Ontdek de leeshoek':'گوشهٔ مطالعه را ببینید'},
  ar:{'Mijn leerplek':'مساحة تعلّمي','Oefeningen':'التمارين','AI-coach':'مدرّب الذكاء الاصطناعي','Leeshoek':'ركن القراءة','Mijn voortgang':'تقدّمي','Woordenboek':'القاموس','Spelling':'الإملاء','Begrijpend lezen':'فهم المقروء','Luisteren':'الاستماع','Schrijven':'الكتابة','Formuleren':'الصياغة','Alles':'الكل','Niveau':'المستوى','Bekijk of herhaal':'مراجعة أو تكرار','Begin oefening':'ابدأ التمرين'}
 };
-export const interfaceTranslation=(text:string,language:string)=>terms[language]?.[text];
+export const interfaceTranslation=(text:string,language:string)=>['taalcoach','AI','XP','Mbo','Hbo','Wo'].includes(text)?text:terms[language]?.[text];
 
 const essentials:Record<string,string[]>={
  'Kies je taal':['Choose your language','اختر لغتك','زبانت را انتخاب کن','Dilini seç','Виберіть мову'],
