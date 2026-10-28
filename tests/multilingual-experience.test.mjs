@@ -38,3 +38,23 @@ test('changing support language preserves profile, coach and level data',async()
  }finally{await db.close()}
 });
 test('speech detection is multilingual and the old paid realtime path is not used by the coach',()=>{assert.doesNotMatch(readFileSync('app/api/speech/route.ts','utf8'),/append\('language','nl'\)/);assert.doesNotMatch(readFileSync('components/learning/platform.tsx','utf8'),/fetch\('\/api\/realtime'/)});
+
+test('speech keeps sentences continuous and switches only at language boundaries',()=>{
+ assert.deepEqual(coachSpeechSegments('Hello. Try again! What is your name?','en'),[{text:'Hello. Try again! What is your name?',language:'en'}]);
+ assert.deepEqual(coachSpeechSegments('Hallo. [[nl]]Hoe gaat het?[[/nl]] Probeer nog eens.','nl'),[{text:'Hallo. Hoe gaat het? Probeer nog eens.',language:'nl'}]);
+ assert.deepEqual(coachSpeechSegments('Say [[nl]]Hallo.[[/nl]] [[nl]]Hoe gaat het?[[/nl]] Now repeat.','en'),[{text:'Say',language:'en'},{text:'Hallo. Hoe gaat het?',language:'nl'},{text:'Now repeat.',language:'en'}]);
+ assert.deepEqual(coachSpeechSegments('🦊✨','ar'),[]);
+});
+test('speech removes formatting and URLs while retaining link labels and native diacritics',()=>{
+ const {spokenText}=loader()('lib/speech.ts');
+ assert.equal(spokenText('**Welkom** [lees hier](https://example.com) ➜ oefenen 🦊✨'), 'Welkom lees hier wordt oefenen');
+ assert.equal(spokenText('مرحَبًا नमस्ते café'), 'مرحَبًا नमस्ते café');
+ assert.equal(spokenText('Lees https://example.com/test daarna verder.'),'Lees daarna verder.');
+});
+test('natural Dutch voices outrank ordinary voices while explicit selection is respected',()=>{
+ const voices=[{lang:'nl-BE',name:'Natural Flemish',voiceURI:'be'},{lang:'nl-NL',name:'Microsoft Dutch',voiceURI:'ms'},{lang:'nl-NL',name:'Dutch enhanced',voiceURI:'enhanced'},{lang:'en-US',name:'English natural',voiceURI:'en'}];
+ assert.equal(bestVoice(voices,'nl').voiceURI,'enhanced');
+ assert.equal(bestVoice(voices,'nl','ms').voiceURI,'ms');
+ assert.equal(bestVoice(voices,'en','ms').voiceURI,'en');
+ assert.equal(bestVoice(voices,'ar'),undefined);
+});

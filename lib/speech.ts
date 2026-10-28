@@ -32,4 +32,17 @@ export async function audioSamples(blob:Blob){
   return samples;
  }finally{await context.close()}
 }
-export const spokenText=(text:string)=>text.replace(/[*#_`]/g,'').replace(/→/g,' wordt ').replace(/https?:\/\/\S+/g,'').trim();
+// Clean formatting without removing combining marks used by many native languages.
+export const spokenText=(text:string)=>text
+ .replace(/!\[([^\]]*)\]\([^)]+\)/g,'$1')
+ .replace(/\[([^\]]+)\]\([^)]+\)/g,'$1')
+ .replace(/https?:\/\/\S+/g,'')
+ .replace(/\[\[\/?nl\]\]/g,'')
+ .replace(/[*#_`~]/g,'')
+ .replace(/[→➜]/g,' wordt ')
+ .replace(/\p{Extended_Pictographic}(?:[\uFE0E\uFE0F]|\p{Emoji_Modifier}|\u200D\p{Extended_Pictographic})*|[0-9#*]\uFE0F?\u20E3/gu,' ')
+ .replace(/[^\p{L}\p{M}\p{N}\p{P}\p{Z}\n]/gu,' ')
+ .replace(/[ \t]+/g,' ')
+ .replace(/\n\s*\n/g,'. ')
+ .replace(/\n/g,' ')
+ .trim();

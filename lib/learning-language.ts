@@ -1,4 +1,5 @@
 import {languages} from './profile';
+import {spokenText} from './speech';
 
 export function normalizeLanguage(value:string){
  const trimmed=value.normalize('NFKC').trim().slice(0,80);
@@ -17,11 +18,23 @@ export function coachSpeechSegments(text:string,language:string){
   parts.push({text:match[1],language:'nl'});end=match.index!+match[0].length;
  }
  if(end<text.length)parts.push({text:text.slice(end),language});
- return parts.map(p=>({...p,text:p.text.replace(/\[\[\/?nl\]\]/g,'').replace(/[*#_`]/g,'').trim()})).filter(p=>p.text);
+ // A continuous utterance per language, never per sentence. Only a real language
+ // change requires a new utterance so Dutch examples retain Dutch pronunciation.
+ const merged:{text:string;language:string}[]=[];
+ for(const part of parts){
+  const text=spokenText(part.text);if(!text)continue;
+  const normalized=normalizeLanguage(part.language),previous=merged.at(-1);
+  if(previous?.language===normalized)previous.text+=' '+text;
+  else merged.push({text,language:normalized});
+ }
+ return merged;
 }
 export function displayCoachText(text:string){return text.replace(/\[\[\/?nl\]\]/g,'')}
 export function bestVoice(voices:SpeechSynthesisVoice[],language:string,preferred=''){
  const code=normalizeLanguage(language).split('-')[0].toLowerCase();
  const matches=voices.filter(v=>v.lang.toLowerCase().split('-')[0]===code);
- return matches.find(v=>v.voiceURI===preferred)||matches.find(v=>/natural|online|premium|enhanced|google/i.test(v.name))||matches[0];
+ const preferredVoice=matches.find(v=>v.voiceURI===preferred);if(preferredVoice)return preferredVoice;
+ const dutch=code==='nl'?matches.filter(v=>v.lang.toLowerCase()==='nl-nl'):[];
+ const candidates=dutch.length?dutch:matches;
+ return candidates.find(v=>/natural|premium|enhanced/i.test(v.name))||candidates.find(v=>/online|google|microsoft/i.test(v.name))||candidates[0];
 }
