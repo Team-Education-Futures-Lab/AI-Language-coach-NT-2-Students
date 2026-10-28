@@ -27,7 +27,7 @@ export function PipAssistant({context:provided,answers=[],embedded=false,onHelpU
  useEffect(()=>()=>{generation.current++;abort.current?.abort()},[]);
  useEffect(()=>{if(open)field.current?.focus()},[open]);
  useEffect(()=>{if(embedded||!open)return;const check=()=>{if(document.querySelector('[data-slot="dialog-content"]'))setOpen(false)};const observer=new MutationObserver(check);observer.observe(document.body,{childList:true,subtree:true});check();return()=>observer.disconnect()},[embedded,open]);
- useEffect(()=>{if(open)end.current?.scrollIntoView({block:'nearest'})},[messages,busy,open]);
+ useEffect(()=>{if(open&&end.current?.parentElement)end.current.parentElement.scrollTop=end.current.parentElement.scrollHeight},[messages,busy,open]);
  function hint(){onHelpUsed?.();const h=studyHint(context,hints);setHints(hints+1);setMessages(m=>[...m,{role:'assistant',content:h,kind:'hint'}]);setError('')}
  function close(){setOpen(false);launcher.current?.focus()}
  async function send(spoken?:string){

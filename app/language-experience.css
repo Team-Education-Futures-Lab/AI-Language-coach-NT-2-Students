@@ -45,3 +45,14 @@ html[dir=rtl] .message.user{align-self:flex-end}
 @media(max-width:900px){.landing-nav-actions .landing-login{display:none}.language-welcome{align-items:flex-start;flex-direction:column}.language-welcome-actions{flex-direction:row;flex-wrap:wrap}.topbar{flex-wrap:wrap}.breadcrumb{max-width:100%}}
 @media(max-width:650px){.language-popover{position:fixed;top:75px;inset-inline:16px;width:auto}.language-button{max-width:118px}.landing-nav .landing-button-small{display:none}.landing-nav{gap:10px!important}.auth-back{font-size:12px}.auth-header{gap:12px}.language-welcome{padding:20px}.language-welcome h2{font-size:23px}.voice-call-card{gap:12px;padding:12px}.voice-call-orbit{width:52px;height:52px}.voice-connect{width:100%}.conversation-modes>span{font-size:10px}.page-heading,.section-heading{flex-wrap:wrap}.chat-bottom{align-items:stretch}}
 @media(prefers-reduced-motion:reduce){.voice-wave i{animation:none!important}}
+
+/* Keep the heading and composer visible; only the conversation scrolls. */
+.coach-dialog{display:flex!important;flex-direction:column;height:min(860px,94svh);max-height:94svh!important;gap:9px!important;overflow:hidden!important}
+.coach-dialog>*{flex-shrink:0}.coach-dialog .chat-messages{flex:1 1 200px;height:auto;min-height:90px;overflow:auto;overscroll-behavior:contain;padding:8px 2px}
+.coach-dialog>.muted,.coach-dialog>.pip-local-status{display:none}.coach-dialog .new-conversation{padding:5px 10px;font-size:12px;min-height:30px}
+.coach-language-note{font-size:12px;line-height:1.5;padding:8px 12px;border-radius:10px;background:var(--secondary);color:var(--foreground)}
+.coach-goals{font-size:12px;max-height:100px;overflow:auto}.coach-goals summary{cursor:pointer;color:var(--muted-foreground)}
+.coach-dialog .voice-controls{max-height:33svh;overflow:auto;padding-top:9px;margin-top:0}.coach-dialog .voice-actions{margin-bottom:5px}.coach-dialog .chat-bottom{margin:0;padding-top:0;font-size:11px;gap:4px}
+.coach-dialog .voice-call-card{padding:10px 14px;margin:5px 0 7px}.coach-dialog .conversation-modes{margin-bottom:7px}.coach-dialog .voice-call-orbit{height:48px;width:48px}
+.coach-dialog .chat-input{min-height:44px;padding:3px}.coach-dialog .chat-input input{padding:10px;font-size:14px}.coach-dialog .chat-input button{min-width:42px}
+@media(max-height:700px){.coach-dialog{padding:15px!important;gap:6px!important;overflow:auto!important}.coach-dialog .pip-coach-heading{display:none}.coach-dialog .chat-messages{min-height:110px}.coach-dialog .voice-controls{max-height:37svh}.coach-dialog .chat-bottom>span{display:none}}

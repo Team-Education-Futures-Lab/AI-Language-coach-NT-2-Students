@@ -42,3 +42,7 @@ const essentials:Record<string,string[]>={
  'Kies een oefening. Lees de uitleg in jouw taal. Oefen in het Nederlands. Je coach helpt je als je vastloopt.':['Choose an exercise. Read the instructions in your language. Practise Dutch. Your coach helps when you get stuck.','اختر تمرينًا واقرأ الشرح بلغتك. تدرّب باللغة الهولندية. يساعدك المدرّب عندما تواجه صعوبة.','یک تمرین انتخاب کن. توضیحات را به زبان خودت بخوان و به هلندی تمرین کن. اگر گیر کردی، مربی کمکت می‌کند.','Bir alıştırma seç. Açıklamayı kendi dilinde oku. Hollandaca pratik yap. Takıldığında koçun yardımcı olur.','Оберіть вправу. Прочитайте пояснення вашою мовою. Практикуйте нідерландську. Наставник допоможе, якщо виникнуть труднощі.'],
 };
 for(const [text,translations] of Object.entries(essentials))['en','ar','fa','tr','uk'].forEach((language,i)=>{(terms[language]??={})[text]=translations[i]});
+
+Object.assign(terms.en,{'Vraag gerust uitleg in jouw taal. We oefenen Nederlands, één zin tegelijk.':'Ask for help in your language. We practise Dutch, one sentence at a time.','Mijn oefendoelen':'My practice goals'});
+Object.assign(terms.ar,{'Vraag gerust uitleg in jouw taal. We oefenen Nederlands, één zin tegelijk.':'اطلب الشرح بلغتك. نتدرّب على الهولندية، جملة واحدة في كل مرة.','Mijn oefendoelen':'أهداف التدريب'});
+Object.assign(terms.fa,{'Vraag gerust uitleg in jouw taal. We oefenen Nederlands, één zin tegelijk.':'به زبان خودت سؤال بپرس. هلندی را هر بار یک جمله تمرین می‌کنیم.','Mijn oefendoelen':'هدف‌های تمرین من'});
