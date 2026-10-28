@@ -1,0 +1,47 @@
+/* UI translations flow as a single line of content; learning text has its own language. */
+.ui-copy{overflow-wrap:anywhere;unicode-bidi:plaintext;min-width:0}
+button .ui-copy,a .ui-copy{white-space:normal;line-height:inherit}
+:where(button,a,input,textarea,select){min-width:0}
+[lang=nl][dir=ltr]{unicode-bidi:isolate}
+html[dir=rtl] :is(h1,h2,h3,.eyebrow,.landing-kicker){letter-spacing:0!important}
+html[dir=rtl] .app-shell{direction:ltr}
+html[dir=rtl] :is(.workspace,[data-slot=sidebar-content],[data-slot=sidebar-footer],.pip-help-panel,.coach-dialog){direction:rtl;text-align:start}
+html[dir=rtl] .message.assistant{align-self:flex-start}
+html[dir=rtl] .message.user{align-self:flex-end}
+:is(.message,.pip-help-message) p{white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext}
+:is(.mission-card,.game-card,.nav-button,.primary-button,.outline-button,.auth-submit){height:auto;min-width:0;white-space:normal}
+:is(.page-heading,.section-heading,.top-actions,.auth-header,.landing-nav-actions){gap:12px;min-width:0}
+.language-switcher{flex:none;position:relative;text-align:start;z-index:65}
+.language-button{display:inline-flex;gap:7px;align-items:center;max-width:175px;min-height:38px;color:inherit;background:color-mix(in srgb,var(--card) 92%,transparent)}
+.language-button>span:last-child{overflow:hidden;text-overflow:ellipsis}
+.language-popover{inset-inline-end:0;right:auto;left:auto;top:calc(100% + 9px);width:min(330px,calc(100vw - 32px));text-align:start;max-height:75svh;overflow:auto;box-shadow:0 20px 60px #0003}
+.language-options button{text-align:start;overflow-wrap:anywhere;font-family:Arial,sans-serif;line-height:1.65}
+.language-retry{position:absolute;inset-inline-end:-6px;top:-7px;background:var(--primary);color:var(--primary-foreground);width:20px;height:20px;border-radius:50%;font-weight:bold}
+.language-warning{padding:10px;border:1px solid var(--border);border-radius:8px;font-size:12px!important}
+.language-warning button{display:block;text-decoration:underline;padding:5px}
+.tc-landing .language-switcher,.tc-auth .language-switcher{font-family:Arial,sans-serif;font-size:14px;letter-spacing:normal}
+.tc-landing .language-button,.tc-auth .language-button{color:#34382f;border-color:#d7d8d0;background:#fff9}
+.auth-header>.language-switcher{order:2;margin-inline-start:auto}.auth-back{order:3}.auth-header{flex-wrap:wrap}
+.language-welcome{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:25px 28px;background:linear-gradient(115deg,var(--card),var(--secondary));border:1px solid var(--border);border-radius:20px;margin:0 0 24px}
+.language-welcome h2{font-size:26px;margin:8px 0}.language-welcome p{max-width:600px;line-height:1.7;color:var(--muted-foreground)}
+.language-welcome-actions{display:flex;flex-direction:column;align-items:flex-start;gap:14px;flex:none}
+.conversation-modes{display:flex;align-items:center;gap:5px;padding:5px;border:1px solid var(--border);border-radius:13px;background:var(--background);margin-bottom:12px}
+.conversation-modes button{border:0!important;border-radius:9px!important;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px!important;font-size:13px!important}
+.conversation-modes button[aria-pressed=true]{background:var(--primary)!important;color:var(--primary-foreground);box-shadow:0 3px 9px #0001}
+.conversation-modes>span{margin-inline-start:auto;font-size:11px;color:var(--muted-foreground);text-align:end}
+.voice-call-card{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:18px;border-radius:18px;background:linear-gradient(125deg,var(--secondary),var(--card));border:1px solid var(--border);margin:8px 0 14px}
+.voice-call-orbit{border-radius:50%;width:68px;height:68px;display:grid;place-items:center;background:var(--card);box-shadow:0 0 0 6px color-mix(in srgb,var(--primary) 8%,transparent)}
+.voice-call-copy{flex:1;min-width:130px}.voice-call-copy b{display:block;font-size:15px}.voice-call-copy small{display:block;margin-top:3px}
+.voice-connect,.voice-hangup{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0!important;background:var(--primary)!important;color:var(--primary-foreground);padding:11px 14px!important;border-radius:12px!important}
+.voice-hangup{background:#b83d36!important;color:white;width:44px;height:44px;border-radius:50%!important;padding:0!important}
+.voice-wave{height:16px;display:flex;align-items:center;gap:3px;margin-top:8px;direction:ltr}.voice-wave i{display:block;width:3px;height:4px;background:var(--primary);border-radius:9px}
+[data-phase=listening] .voice-wave i,[data-phase=speaking] .voice-wave i{animation:voice-pulse 1s ease-in-out infinite}
+@keyframes voice-pulse{50%{height:16px;opacity:.6}}
+.voice-actions{flex-wrap:wrap;gap:7px}.voice-actions button{font-size:12px!important;padding:8px 10px!important}.voice-controls small{font-size:11px;line-height:1.6}.voice-controls p{font-size:13px;line-height:1.6}.voice-settings select{width:100%;max-width:100%}
+.coach-dialog .chat-messages{min-height:180px;flex:1;overflow-y:auto}.coach-dialog .voice-controls{flex:none;max-height:42svh;overflow:auto}
+.pip-help-panel .voice-call-card{gap:12px;padding:12px}.pip-help-panel .conversation-modes>span{display:none}
+.pip-help-panel .pip-extra-options{max-height:43svh;overflow-y:auto}
+@media(max-width:1250px){.landing-links{gap:12px!important}.landing-nav-actions{gap:10px!important}.landing-nav{padding-inline:20px!important}.landing-nav .landing-button-small{padding-inline:16px!important}}
+@media(max-width:900px){.landing-nav-actions .landing-login{display:none}.language-welcome{align-items:flex-start;flex-direction:column}.language-welcome-actions{flex-direction:row;flex-wrap:wrap}.topbar{flex-wrap:wrap}.breadcrumb{max-width:100%}}
+@media(max-width:650px){.language-popover{position:fixed;top:75px;inset-inline:16px;width:auto}.language-button{max-width:118px}.landing-nav .landing-button-small{display:none}.landing-nav{gap:10px!important}.auth-back{font-size:12px}.auth-header{gap:12px}.language-welcome{padding:20px}.language-welcome h2{font-size:23px}.voice-call-card{gap:12px;padding:12px}.voice-call-orbit{width:52px;height:52px}.voice-connect{width:100%}.conversation-modes>span{font-size:10px}.page-heading,.section-heading{flex-wrap:wrap}.chat-bottom{align-items:stretch}}
+@media(prefers-reduced-motion:reduce){.voice-wave i{animation:none!important}}

@@ -6,7 +6,8 @@ export async function POST(r:Request){const u=await identity(r);if(!u)return fai
  if(Number(r.headers.get('content-length'))>2500000)return fail('Deze opname is te groot. Spreek maximaal 30 seconden.',413);
  const form=await r.formData(),file=form.get('audio');
  if(!(file instanceof File)||file.size>2000000||file.size<200||!/^audio\/(webm|ogg|mp4|mpeg|wav|x-wav)/.test(file.type))return fail('Gebruik een korte audio-opname.');
- await aiAllowance(u,'speech');const body=new FormData();body.append('file',file);body.append('model','whisper-large-v3-turbo');body.append('language','nl');body.append('response_format','verbose_json');
+ await aiAllowance(u,'speech');const body=new FormData();body.append('file',file);body.append('model','whisper-large-v3-turbo');// Omit language: Whisper detects the student's language and preserves Dutch practice.
+ body.append('response_format','verbose_json');
  const result=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+process.env.GROQ_API_KEY},body,signal:AbortSignal.timeout(35000)});
  if(!result.ok)return fail(result.status===429?'De gratis spraaklimiet is bereikt. Probeer later opnieuw.':'Spraakherkenning is tijdelijk niet bereikbaar.',result.status===429?429:503);
  const j=await result.json() as {text?:string;duration?:number;segments?:{no_speech_prob?:number}[]};
