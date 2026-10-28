@@ -56,3 +56,8 @@ html[dir=rtl] .message.user{align-self:flex-end}
 .coach-dialog .voice-call-card{padding:10px 14px;margin:5px 0 7px}.coach-dialog .conversation-modes{margin-bottom:7px}.coach-dialog .voice-call-orbit{height:48px;width:48px}
 .coach-dialog .chat-input{min-height:44px;padding:3px}.coach-dialog .chat-input input{padding:10px;font-size:14px}.coach-dialog .chat-input button{min-width:42px}
 @media(max-height:700px){.coach-dialog{padding:15px!important;gap:6px!important;overflow:auto!important}.coach-dialog .pip-coach-heading{display:none}.coach-dialog .chat-messages{min-height:110px}.coach-dialog .voice-controls{max-height:37svh}.coach-dialog .chat-bottom>span{display:none}}
+
+/* A page language menu must stay behind modal conversations. */
+.language-switcher{z-index:40}
+.coach-dialog{width:min(760px,calc(100vw - 24px))!important}
+@media(max-width:650px){.coach-dialog .chat-bottom>span{display:none}.coach-dialog .chat-bottom{align-items:flex-end}}
