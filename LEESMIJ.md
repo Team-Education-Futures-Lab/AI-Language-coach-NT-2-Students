@@ -16,10 +16,18 @@ ze niet met een verkeerd taalmodel uit te spreken. Browser-TTS is uitsluitend ee
 handmatig gekozen alternatief en kan per taal van stem veranderen. Er is geen
 stilzwijgende fallback en er is geen betaalde API nodig.
 
-De eerste download bedraagt circa 400 MB en wordt waar mogelijk via Cache Storage
-bewaard. Studenttekst en audio blijven lokaal. Tijdelijke audio wordt alleen in
+Bij het openen van de leeromgeving worden de spraakmotor en alle 10 profielen
+vooraf geladen, ook voordat een coachgesprek wordt geopend. De eerste download
+bedraagt circa 400 MB en wordt via Cache Storage bewaard. Opgeslagen bestanden
+worden bij volgende bezoeken opnieuw gebruikt. De status maakt onderscheid tussen
+downloaden, opgeslagen stemmen openen en nieuwe audio berekenen. Bij een mislukte
+cache-write meldt de app dat bestanden niet kunnen worden bewaard. Browserdata
+wissen, privémodus en opslagtekort kunnen een nieuwe download nodig maken. Studenttekst en audio blijven lokaal. Tijdelijke audio wordt alleen in
 het geheugen hergebruikt, met aparte cachekeys voor tekst, taal, profiel en tempo.
-Annuleren of een workerfout ruimt de worker op; opnieuw proberen start een nieuwe.
+Annuleren stopt het afspelen direct, maar bewaart de geladen spraakmotor: de
+lopende berekening wordt stil afgerond voordat een volgend verzoek start. Een
+workerfout of timeout ruimt de worker wel op. Voorladen is gedeeld en wordt niet
+afgebroken bij het sluiten van de chat. Nieuwe tekst vraagt nog lokale rekentijd.
 De profielkeuze wordt lokaal opgeslagen en gedeeld tussen coachvensters.
 
 Model: supertone-oss-archive/supertonic-3, revision

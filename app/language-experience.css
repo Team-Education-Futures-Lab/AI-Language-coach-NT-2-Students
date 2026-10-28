@@ -61,3 +61,20 @@ html[dir=rtl] .message.user{align-self:flex-end}
 .language-switcher{z-index:40}
 .coach-dialog{width:min(760px,calc(100vw - 24px))!important}
 @media(max-width:650px){.coach-dialog .chat-bottom>span{display:none}.coach-dialog .chat-bottom{align-items:flex-end}}
+
+/* Shared voice readiness: small status, details only when requested. */
+.voice-preload{margin:0 0 1rem;padding:.7rem .9rem;border:1px solid var(--border);border-radius:14px;background:var(--card);font-size:.85rem;line-height:1.5}
+.voice-preload summary{display:flex;align-items:center;gap:.6rem;cursor:pointer;list-style:none;overflow-wrap:anywhere}
+.voice-preload summary::-webkit-details-marker{display:none}
+.voice-preload summary::after{content:'+';margin-inline-start:auto;padding-inline-start:.5rem}
+.voice-preload[open] summary::after{content:'−'}
+.voice-preload-icon{display:flex;flex-shrink:0;color:var(--primary)}
+.voice-preload[data-state=loading] .voice-preload-icon,.voice-preload[data-state=downloading] .voice-preload-icon{animation:voice-preload-spin 1.5s linear infinite}
+.voice-preload-details{padding-top:.7rem;display:grid;gap:.6rem}
+.voice-preload-details p,.voice-preload-details small{margin:0}
+.voice-preload-details progress{width:100%;accent-color:var(--primary);height:6px}
+.voice-preload-details button{display:flex;align-items:center;justify-content:center;gap:.5rem;border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;justify-self:start}
+.voice-settings>.voice-preload{grid-column:1 / -1;width:100%;margin:0}
+@keyframes voice-preload-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.voice-preload .voice-preload-icon{animation:none}}
+.voice-preload-count{display:block;font-variant-numeric:tabular-nums;opacity:.75}
