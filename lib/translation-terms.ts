@@ -1,3 +1,4 @@
+import {tourTranslations,tourIntro} from './tour-translations';
 import {coachTourSteps} from './coach-tour';
 // Core interface vocabulary works without an AI request. Other UI translations are cached on the server.
 const terms:Record<string,Record<string,string>>={
@@ -71,3 +72,19 @@ const tourCopy:Record<string,[string,string]>={
 for(const [text,values] of Object.entries(tourCopy))['en','ar'].forEach((language,i)=>{(terms[language]??={})[text]=values[i]});
 
 for(const step of coachTourSteps){terms.en[step.title]=step.en[0];terms.en[step.body]=step.en[1]}
+
+for(const [lang,steps] of Object.entries(tourTranslations))steps.forEach(([title,body],i)=>{const step=coachTourSteps[i];if(step){(terms[lang]??={})[step.title]=title;terms[lang][step.body]=body}});
+for(const [lang,[title,body]] of Object.entries(tourIntro)){(terms[lang]??={})[tourIntro.nl[0]]=title;terms[lang][tourIntro.nl[1]]=body}
+
+const tourControls:Record<string,[string,string,string]>={
+ 'Start rondleiding':['شروع راهنما','开始导览','התחלת הסיור'],
+ 'Overslaan':['رد کردن','跳过','דילוג'],
+ 'Volgende':['بعدی','下一步','הבא'],
+ 'Terug':['قبلی','上一步','חזרה'],
+ 'Start oefening':['شروع تمرین','开始练习','התחלת תרגיל'],
+ 'Voorlezen aan':['خواندن با صدا روشن','朗读已开启','ההקראה פועלת'],
+ 'Voorlezen uit':['خواندن با صدا خاموش','朗读已关闭','ההקראה כבויה'],
+ 'Audio voorbereiden…':['آماده کردن صدا…','正在准备音频…','מכינים את ההקראה…'],
+ 'Voorlezen…':['در حال خواندن…','正在朗读…','מקריאים…']
+};
+for(const [text,values] of Object.entries(tourControls))['fa','zh','he'].forEach((lang,i)=>{(terms[lang]??={})[text]=values[i]});

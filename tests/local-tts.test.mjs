@@ -17,7 +17,7 @@ test('one selected profile is used for every language in a single continuous aud
  assert.equal(h.calls.length,1);assert.deepEqual(JSON.parse(JSON.stringify(h.calls[0].parts)),mixed);assert.equal(h.calls[0].profile,'F1');
 });
 test('unsupported language is rejected before any model generation instead of wrong pronunciation',async()=>{
- const h=setup(wav);await assert.rejects(h.speak([{text:'سلام',language:'fa'}],{profile:'M1'}),/ondersteunt deze taal nog niet/);assert.equal(h.calls.length,0);
+ const h=setup(wav);await assert.rejects(h.speak([{text:'سلام',language:'xx'}],{profile:'M1'}),/ondersteunt deze taal nog niet/);assert.equal(h.calls.length,0);
 });
 test('worker failure releases the queue for a fresh retry',async()=>{
  const h=setup((d,n)=>n===1?{error:'Download mislukt'}:wav());

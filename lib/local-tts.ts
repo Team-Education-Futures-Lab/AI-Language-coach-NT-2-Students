@@ -1,4 +1,5 @@
-import {validVoiceProfile,voiceLanguage,type VoiceProfile} from './voice-profiles';
+import {multilingualSpeech,multilingualChunks,wavAudio} from './multilingual-tts';
+import {validVoiceProfile,voiceLanguage,coachVoiceLanguage,type VoiceProfile} from './voice-profiles';
 import type {SpeechAudioChunk} from './speech-playback';
 export type SpeechPart={text:string;language:string};
 export type VoiceLoadState={phase:'idle'|'downloading'|'loading'|'ready'|'error';message:string;detail?:string;completed?:number;total?:number;cached?:boolean};
@@ -60,12 +61,27 @@ export function localCoachSpeech(parts:SpeechPart[],options:{profile:VoiceProfil
  const task=async()=>{
   if(options.signal?.aborted)throw new DOMException('Geannuleerd','AbortError');
   if(!validVoiceProfile(options.profile))throw Error('Kies een geldig stemprofiel.');
-  const normalized=parts.filter(p=>p.text.trim()).map(p=>{const language=voiceLanguage(p.language);if(!language)throw Error('Het vaste stemprofiel ondersteunt deze taal nog niet: '+p.language+'. Je kunt blijven typen of expliciet de browserstem kiezen.');return {...p,language}});
+  const normalized=parts.filter(p=>p.text.trim()).map(p=>{const language=coachVoiceLanguage(p.language);if(!language)throw Error('Het vaste stemprofiel ondersteunt deze taal nog niet: '+p.language+'. Je kunt blijven typen of expliciet de browserstem kiezen.');return {...p,language}});
   if(!normalized.length)throw Error('Geen tekst om voor te lezen.');
   if(normalized.reduce((n,p)=>n+p.text.length,0)>5000)throw Error('Dit antwoord is te lang om in één keer voor te lezen.');
   const rate=Math.min(1.2,Math.max(.8,options.rate??.95)),key=JSON.stringify([normalized,options.profile,rate]);
   const cached=recent.get(key);if(cached)return {file:cached};
-  const file=(await request({type:'speak',parts:normalized,profile:options.profile,rate},message=>{if(!options.signal?.aborted)options.onProgress?.(message)},options.onChunk,options.signal))!;
+  let file:Blob;
+  if(normalized.every(p=>voiceLanguage(p.language))){
+   file=(await request({type:'speak',parts:normalized,profile:options.profile,rate},message=>{if(!options.signal?.aborted)options.onProgress?.(message)},options.onChunk,options.signal))!;
+  }else{
+   const pcm:Float32Array[]=[];
+   for(const part of normalized){
+    if(options.signal?.aborted)throw new DOMException('Geannuleerd','AbortError');
+    if(!voiceLanguage(part.language)){
+     for(const text of multilingualChunks(part.text,part.language)){const chunk=await multilingualSpeech(text,part.language,{...options,rate});pcm.push(chunk.samples);if(!options.signal?.aborted)options.onChunk?.(chunk)}
+    }else{
+     const blob=(await request({type:'speak',parts:[part],profile:options.profile,rate},options.onProgress,options.onChunk,options.signal))!;
+     const context=new AudioContext({sampleRate:24000});try{const decoded=await context.decodeAudioData(await blob.arrayBuffer());pcm.push(decoded.getChannelData(0).slice())}finally{await context.close()}
+    }
+   }
+   const joined=new Float32Array(pcm.reduce((n,a)=>n+a.length,0));let offset=0;for(const a of pcm){joined.set(a,offset);offset+=a.length}file=wavAudio(joined,24000);
+  }
   if(recent.size>=3)recent.delete(recent.keys().next().value!);recent.set(key,file);return {file};
  };
  return abortable(enqueue(task),options.signal);

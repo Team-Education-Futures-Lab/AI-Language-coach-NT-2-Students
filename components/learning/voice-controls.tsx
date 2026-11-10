@@ -8,7 +8,7 @@ import {localCoachSpeech,preloadCoachVoice} from '@/lib/local-tts';
 import {SpeechPlayback,unlockCoachAudio} from '@/lib/speech-playback';
 import {createVoiceActivity} from '@/lib/voice-activity';
 import {VoicePreload} from './voice-preload';
-import {voiceProfiles,validVoiceProfile,voiceLanguage,type VoiceProfile} from '@/lib/voice-profiles';
+import {voiceProfiles,validVoiceProfile,voiceLanguage,coachVoiceLanguage,type VoiceProfile} from '@/lib/voice-profiles';
 import {PipMascot,type PipMood} from './pip-mascot';
 type Props={onExpand?:()=>void;compact?:boolean;reply:string;replyKey?:string;replyLanguage?:string;requestError?:string;disabled?:boolean;resetKey:string;onTranscript:(text:string)=>void;onMood?:(mood:PipMood)=>void};
 type Phase='idle'|'opening'|'listening'|'transcribing'|'review'|'waiting'|'preparing'|'speaking';
@@ -59,7 +59,7 @@ export function VoiceControls({reply,replyKey,replyLanguage,requestError,disable
   prefetch.current?.abort();stopSpeech();const g=speechSequence.current;setError('');setNotice('');
   const control=new AbortController();synthesis.current=control;const chunks=coachSpeechSegments(text,supportLanguage||replyLanguage||language);
   try{
-   if(engineMode==='natural'&&!forceBrowser&&chunks.every(chunk=>voiceLanguage(chunk.language))){
+   if(engineMode==='natural'&&!forceBrowser&&chunks.every(chunk=>coachVoiceLanguage(chunk.language))){
     if(typeof AudioContext==='undefined')throw Error('Deze browser kan de lokale stem niet afspelen. Kies de browserstem in Spraakinstellingen.');
     setPhase('preparing');let streamed=false;
     const player=new SpeechPlayback(()=>{if(g===speechSequence.current){setNotice('');setPhase('speaking')}});playback.current=player;
@@ -80,7 +80,7 @@ export function VoiceControls({reply,replyKey,replyLanguage,requestError,disable
     });
    }
    if(g!==speechSequence.current)return;setNotice('');setPhase('idle');if(auto.current)void record(true);
-  }catch(e){if(g!==speechSequence.current)return;if(engineMode==='natural'&&!forceBrowser&&chunks.every(chunk=>voiceLanguage(chunk.language))){return speak(text,supportLanguage,true)}cancel();setError((e as Error).message)}
+  }catch(e){if(g!==speechSequence.current)return;cancel();setError((e as Error).message)}
  }
  function toggleReadAloud(){
   unlockCoachAudio();const next=!readEnabled.current;saveReadAloud(next);
@@ -144,6 +144,6 @@ export function VoiceControls({reply,replyKey,replyLanguage,requestError,disable
  {phase==='preparing'&&!notice&&mode==='type'&&<p role="status"><B>Je audio wordt klaargezet…</B></p>}{notice&&<p role="status"><B>{notice}</B></p>}{error&&<p role="alert" className="voice-error"><B>{error}</B>{reply&&<button type="button" onClick={()=>{unlockCoachAudio();void speak(reply)}}><B>Probeer voorlezen opnieuw</B></button>}</p>}{!supported&&<p className="voice-error"><B>Spraakopname is in deze browser niet beschikbaar. Je kunt blijven typen.</B></p>}
  {settings&&<div className="voice-settings"><VoicePreload/><label><B>Stemprofiel</B><select value={engineMode==='browser'?'browser':profile} onChange={e=>chooseProfile(e.target.value)}><optgroup label="Vrouwelijk">{voiceProfiles.filter(v=>v.id.startsWith('F')).map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</optgroup><optgroup label="Mannelijk">{voiceProfiles.filter(v=>v.id.startsWith('M')).map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</optgroup><option value="browser">Browserstem (kan per taal verschillen)</option></select></label><button type="button" disabled={phase!=='idle'} onClick={()=>void speak('Hallo! Vandaag oefenen we samen Nederlands. Wat wil je vandaag leren?','nl')}><Volume2 size={16}/><B>Beluister stem</B></button>{engineMode==='browser'&&<label><B>Nederlandse browserstem</B><select value={voiceURI} onChange={e=>{cancel();setVoiceURI(e.target.value)}}><option value="">Automatisch</option>{voices.filter(v=>v.lang.startsWith('nl')).map(v=><option value={v.voiceURI} key={v.voiceURI}>{v.name}</option>)}</select></label>}<label><B>Tempo</B><select value={rate} onChange={e=>{cancel();setRate(Number(e.target.value))}}><option value={.85}>Rustig</option><option value={.95}>Natuurlijk</option><option value={1.05}>Vlot</option></select></label>
  <label><B>Microfoon</B><select value={deviceId} onChange={e=>{cancel();setDeviceId(e.target.value);try{localStorage.setItem('taalcoach-microphone-v1',e.target.value)}catch{}}}><option value="">Standaardmicrofoon</option>{devices.filter(d=>d.deviceId&&d.deviceId!=='default').map((d,i)=><option key={d.deviceId} value={d.deviceId}>{d.label||`Microfoon ${i+1}`}</option>)}</select></label><button type="button" disabled={!supported||phase!=='idle'} onClick={()=>void record(false,true)}><Mic size={16}/><B>Microfoon testen</B></button><small><B>De test blijft op je apparaat. Na toestemming kun je hier ook een andere microfoon kiezen.</B></small>
- <p><B>Eén stemprofiel voor Nederlands en 30 andere ondersteunde talen. De eerste zin begint zodra de audio klaar is; de rest wordt ondertussen voorbereid. De snelheid hangt af van je apparaat.</B></p>{!voiceLanguage(language)&&engineMode==='natural'&&<p role="status"><B>Chatten kan in jouw gekozen taal. Deze vaste stem ondersteunt die taal nog niet. Kies de browserstem als je apparaat een stem voor deze taal heeft; die kan anders klinken.</B></p>}<a href="/spraaklicenties.txt" target="_blank" rel="noreferrer"><B>Ondersteunde talen en stemlicenties</B></a></div>}<small><B>Je microfoon gaat alleen aan wanneer je start. Groq verwerkt je opname. Typen blijft mogelijk.</B></small>
+ <p><B>De bestaande stemprofielen blijven beschikbaar. Perzisch en Chinees gebruiken dezelfde stem als referentie. Voor nieuwe antwoorden in die talen wordt een extra model van circa 1,3 GB op je apparaat opgeslagen. Hiervoor is WebGPU nodig. De stemkleur kan per taal iets verschillen. De eerste zin begint zodra de audio klaar is; de rest wordt ondertussen voorbereid. De snelheid hangt af van je apparaat.</B></p>{!coachVoiceLanguage(language)&&engineMode==='natural'&&<p role="status"><B>Chatten kan in jouw gekozen taal. Deze vaste stem ondersteunt die taal nog niet. Kies de browserstem als je apparaat een stem voor deze taal heeft; die kan anders klinken.</B></p>}<a href="/spraaklicenties.txt" target="_blank" rel="noreferrer"><B>Ondersteunde talen en stemlicenties</B></a></div>}<small><B>Je microfoon gaat alleen aan wanneer je start. Groq verwerkt je opname. Typen blijft mogelijk.</B></small>
  </div>;
 }

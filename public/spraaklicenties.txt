@@ -17,5 +17,19 @@ Hindi, Hongaars, Indonesisch, Italiaans, Japans, Koreaans, Kroatisch,
 Lets, Litouws, Nederlands, Oekraïens, Pools, Portugees, Roemeens,
 Russisch, Sloveens, Slowaaks, Spaans, Tsjechisch, Turks, Vietnamees, Zweeds.
 
-Andere talen kunnen alleen met de expliciet gekozen browserstem worden voorgelezen.
+Extra browsermotor voor Perzisch en Chinees (Mandarijn):
+OmniVoice van k2-fsa, model onder CC-BY-NC-4.0: uitsluitend niet-commercieel.
+https://huggingface.co/k2-fsa/OmniVoice
+VocoLoco WebGPU-code door Magkino onder Apache-2.0.
+Bron, revisies en licenties: /vendor/omnivoice/NOTICE.txt
+Modellicentie: https://creativecommons.org/licenses/by-nc/4.0/
+Code-licentie: /vendor/omnivoice/LICENSE
+De stemreferenties zijn gegenereerd met de bestaande Supertonic-profielen.
+Deze twee talen gebruiken stemoverdracht; accent en stemkleur kunnen verschillen.
+Nieuwe tekst vereist WebGPU en circa 1,3 GB modeldownload, lokaal bewaard indien mogelijk.
+De vooraf opgenomen rondleiding met Vrouw 1 in nl/en/fa/zh vereist geen model.
+Andere talen kunnen met een beschikbare browserstem worden voorgelezen.
 Daarbij kan de stem per taal verschillen. Stemkwaliteit en rekensnelheid verschillen per apparaat.
+
+Hebreeuws is getest maar niet vrijgegeven voor stemoverdracht: uitspraakcontrole gaf fouten.
+Een beschikbare Hebreeuwse apparaatstem kan wel worden gekozen; deze heeft een andere stemkleur.

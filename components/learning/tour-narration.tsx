@@ -3,11 +3,12 @@ import {useEffect,useState,useRef} from 'react';
 import {Volume2,VolumeX} from 'lucide-react';
 import {B} from './translation';
 import {availableBrowserVoices,bestVoice} from '@/lib/learning-language';
+import {prerecordedTourAudio,tourRecordingPath} from '@/lib/tour-recordings';
 import {storedTourAudio} from '@/lib/tour-audio-storage';
 import {TourAudioCache} from '@/lib/tour-audio-cache';
 import {localCoachSpeech} from '@/lib/local-tts';
 import {SpeechPlayback,unlockCoachAudio} from '@/lib/speech-playback';
-import {validVoiceProfile,voiceLanguage} from '@/lib/voice-profiles';
+import {validVoiceProfile,coachVoiceLanguage} from '@/lib/voice-profiles';
 import {spokenText} from '@/lib/speech';
 export function TourNarration({text,nextText,language,active}:{text:string;nextText:string;language:string;active:boolean}){
  const [enabled,setEnabled]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState('');
@@ -17,18 +18,18 @@ export function TourNarration({text,nextText,language,active}:{text:string;nextT
  useEffect(()=>{session.current=new AbortController();return()=>{session.current.abort();audioCache.current.clear()}},[active,language,profile,enabled]);
  function prepare(value:string,onChunk?:Parameters<typeof localCoachSpeech>[1]['onChunk']){
   const clean=spokenText(value),selected=validVoiceProfile(profile)?profile:'F1';
-  const key=JSON.stringify([language,selected,clean]);
-  return audioCache.current.get(key,()=>storedTourAudio(key,()=>localCoachSpeech([{text:clean,language}],{profile:selected,rate:.95,signal:session.current.signal,onChunk}).then(result=>result.file)));
+  const key=JSON.stringify([language,selected,clean,tourRecordingPath(clean,language,selected)||null]);
+  return audioCache.current.get(key,()=>storedTourAudio(key,async()=>await prerecordedTourAudio(clean,language,selected,session.current.signal)??await localCoachSpeech([{text:clean,language}],{profile:selected,rate:.95,signal:session.current.signal,onChunk}).then(result=>result.file)));
  }
  // Only one step ahead: avoid a long background queue delaying a learner who skips ahead.
- useEffect(()=>{if(active&&enabled&&nextText&&status==='Voorlezen…'&&profile!=='browser'&&voiceLanguage(language))void prepare(nextText).catch(()=>{})},[nextText,status,active,enabled,language,profile]);
+ useEffect(()=>{if(active&&enabled&&nextText&&status==='Voorlezen…'&&profile!=='browser'&&coachVoiceLanguage(language))void prepare(nextText).catch(()=>{})},[nextText,status,active,enabled,language,profile]);
  useEffect(()=>{
   setError('');setStatus('');if(!active||!enabled||!text)return;
   const control=new AbortController();let player:SpeechPlayback|null=null;let utterance:SpeechSynthesisUtterance|null=null;
   const clean=spokenText(text);
   async function read(forceBrowser=false):Promise<void>{
    try{
-    if(!forceBrowser&&profile!=='browser'&&voiceLanguage(language)&&typeof AudioContext!=='undefined'){
+    if(!forceBrowser&&profile!=='browser'&&coachVoiceLanguage(language)&&typeof AudioContext!=='undefined'){
      setStatus('Audio voorbereiden…');player=new SpeechPlayback(()=>{if(!control.signal.aborted)setStatus('Voorlezen…')});await player.unlock();if(control.signal.aborted)return;
      let streamed=false;const file=await prepare(clean,chunk=>{if(!control.signal.aborted){streamed=true;player?.add(chunk)}});
      if(control.signal.aborted)return;
@@ -43,7 +44,7 @@ export function TourNarration({text,nextText,language,active}:{text:string;nextT
      setStatus('Voorlezen…');await new Promise<void>((resolve,reject)=>{utterance=new SpeechSynthesisUtterance(clean);utterance.voice=voice;utterance.lang=voice.lang;utterance.rate=.95;utterance.pitch=.98;const finish=(error?:Error)=>{control.signal.removeEventListener('abort',abort);error?reject(error):resolve()};const abort=()=>finish(new DOMException('Geannuleerd','AbortError'));control.signal.addEventListener('abort',abort,{once:true});utterance.onend=()=>finish();utterance.onerror=e=>finish(Error(e.error));speechSynthesis.speak(utterance)});
     }
     if(!control.signal.aborted)setStatus('');
-   }catch(e){if(!control.signal.aborted){if(!forceBrowser&&profile!=='browser'&&voiceLanguage(language)){player?.stop();return read(true)}setStatus('');setError(e instanceof Error?e.message:'Voorlezen lukte niet. Zet voorlezen uit en weer aan om opnieuw te proberen.')}}
+   }catch(e){if(!control.signal.aborted){setStatus('');setError(e instanceof Error?e.message:'Voorlezen lukte niet. Zet voorlezen uit en weer aan om opnieuw te proberen.')}}
   }
   void read();return()=>{control.abort();player?.stop();if(utterance){utterance.onend=null;utterance.onerror=null;speechSynthesis.cancel()}};
  },[text,language,active,enabled,profile]);

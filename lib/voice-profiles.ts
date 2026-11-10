@@ -6,3 +6,6 @@ export type VoiceProfile=typeof voiceProfiles[number]['id'];
 export function validVoiceProfile(value:unknown):value is VoiceProfile{return voiceProfiles.some(v=>v.id===value)}
 export const voiceLanguages=['en','ko','ja','ar','bg','cs','da','de','el','es','et','fi','fr','hi','hr','hu','id','it','lt','lv','nl','pl','pt','ro','ru','sk','sl','sv','tr','uk','vi'];
 export function voiceLanguage(value:string){const code=value.toLowerCase().split('-')[0];return voiceLanguages.includes(code)?code:null}
+
+export const extendedVoiceLanguages=['fa','zh'];
+export function coachVoiceLanguage(value:string){const code=value.toLowerCase().split('-')[0];return voiceLanguage(code)||(extendedVoiceLanguages.includes(code)?code:null)}

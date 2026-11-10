@@ -1,0 +1,8 @@
+VocoLoco browser engine by Magkino, Apache-2.0.
+https://github.com/Magkino/vocoloco_tts
+Source commit: 7fa8601b9864005e473e14b41756d6e963211d97
+Runtime sources unmodified. Standalone transcription and encoder workers omitted.
+OmniVoice weights by k2-fsa: CC-BY-NC-4.0; non-commercial educational demo only.
+https://huggingface.co/k2-fsa/OmniVoice
+Converted model: Gigsu/vocoloco-onnx revision 2c301ff95a826f76ec9ff3d93233318f91362bf5.
+Voice references generated from existing Supertonic profiles under their OpenRAIL-M license.
