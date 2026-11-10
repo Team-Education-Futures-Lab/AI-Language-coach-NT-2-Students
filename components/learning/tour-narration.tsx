@@ -2,7 +2,7 @@
 import {useEffect,useState,useRef} from 'react';
 import {Volume2,VolumeX} from 'lucide-react';
 import {B} from './translation';
-import {bestVoice} from '@/lib/learning-language';
+import {availableBrowserVoices,bestVoice} from '@/lib/learning-language';
 import {TourAudioCache} from '@/lib/tour-audio-cache';
 import {localCoachSpeech} from '@/lib/local-tts';
 import {SpeechPlayback,unlockCoachAudio} from '@/lib/speech-playback';
@@ -24,9 +24,9 @@ export function TourNarration({text,nextText,language,active}:{text:string;nextT
   setError('');setStatus('');if(!active||!enabled||!text)return;
   const control=new AbortController();let player:SpeechPlayback|null=null;let utterance:SpeechSynthesisUtterance|null=null;
   const clean=spokenText(text);
-  async function read(){
+  async function read(forceBrowser=false):Promise<void>{
    try{
-    if(profile!=='browser'&&voiceLanguage(language)&&typeof AudioContext!=='undefined'){
+    if(!forceBrowser&&profile!=='browser'&&voiceLanguage(language)&&typeof AudioContext!=='undefined'){
      setStatus('Audio voorbereiden…');player=new SpeechPlayback(()=>{if(!control.signal.aborted)setStatus('Voorlezen…')});await player.unlock();if(control.signal.aborted)return;
      let streamed=false;const file=await prepare(clean,chunk=>{if(!control.signal.aborted){streamed=true;player?.add(chunk)}});
      if(control.signal.aborted)return;
@@ -35,13 +35,13 @@ export function TourNarration({text,nextText,language,active}:{text:string;nextT
     }else{
      if(!('speechSynthesis' in window))throw Error('Deze browser kan deze taal niet voorlezen. Je kunt de uitleg wel lezen.');
      // Some browsers populate their system voices shortly after opening the page.
-     if(!speechSynthesis.getVoices().length)await new Promise<void>(resolve=>setTimeout(resolve,300));
-     if(control.signal.aborted)return;const voice=bestVoice(speechSynthesis.getVoices(),language,'');
+     const voices=await availableBrowserVoices(control.signal);
+     if(control.signal.aborted)return;const voice=bestVoice(voices,language,'');
      if(!voice)throw Error('Geen stem voor deze taal beschikbaar. Kies een andere taal of voeg een stem toe in je apparaatinstellingen.');
      setStatus('Voorlezen…');await new Promise<void>((resolve,reject)=>{utterance=new SpeechSynthesisUtterance(clean);utterance.voice=voice;utterance.lang=voice.lang;utterance.rate=.95;utterance.pitch=.98;const finish=(error?:Error)=>{control.signal.removeEventListener('abort',abort);error?reject(error):resolve()};const abort=()=>finish(new DOMException('Geannuleerd','AbortError'));control.signal.addEventListener('abort',abort,{once:true});utterance.onend=()=>finish();utterance.onerror=e=>finish(Error(e.error));speechSynthesis.speak(utterance)});
     }
     if(!control.signal.aborted)setStatus('');
-   }catch(e){if(!control.signal.aborted){setStatus('');setError(e instanceof Error?e.message:'Voorlezen lukte niet. Zet voorlezen uit en weer aan om opnieuw te proberen.')}}
+   }catch(e){if(!control.signal.aborted){if(!forceBrowser&&profile!=='browser'&&voiceLanguage(language)){player?.stop();return read(true)}setStatus('');setError(e instanceof Error?e.message:'Voorlezen lukte niet. Zet voorlezen uit en weer aan om opnieuw te proberen.')}}
   }
   void read();return()=>{control.abort();player?.stop();if(utterance){utterance.onend=null;utterance.onerror=null;speechSynthesis.cancel()}};
  },[text,language,active,enabled,profile]);

@@ -35,9 +35,16 @@ export function coachSpeechSegments(text:string,language:string){
 export function displayCoachText(text:string){return text.replace(/\[\[\/?nl\]\]/g,'')}
 export function bestVoice(voices:SpeechSynthesisVoice[],language:string,preferred=''){
  const code=normalizeLanguage(language).split('-')[0].toLowerCase();
- const matches=voices.filter(v=>v.lang.toLowerCase().split('-')[0]===code);
+ const matches=voices.filter(v=>v.lang.toLowerCase().replace(/_/g,'-').split('-')[0]===code);
  const preferredVoice=matches.find(v=>v.voiceURI===preferred);if(preferredVoice)return preferredVoice;
  const dutch=code==='nl'?matches.filter(v=>v.lang.toLowerCase()==='nl-nl'):[];
  const candidates=dutch.length?dutch:matches;
  return candidates.find(v=>/natural|premium|enhanced/i.test(v.name))||candidates.find(v=>/online|google|microsoft/i.test(v.name))||candidates[0];
+}
+
+/** Browser voices may arrive asynchronously, especially on the first visit. */
+export async function availableBrowserVoices(signal?:AbortSignal):Promise<SpeechSynthesisVoice[]>{
+ if(typeof window==='undefined'||!('speechSynthesis' in window))return [];
+ const initial=speechSynthesis.getVoices();if(initial.length)return initial;
+ return new Promise(resolve=>{let timer:ReturnType<typeof setTimeout>;const finish=()=>{clearTimeout(timer);speechSynthesis.removeEventListener('voiceschanged',changed);signal?.removeEventListener('abort',finish);resolve(speechSynthesis.getVoices())};const changed=()=>{if(speechSynthesis.getVoices().length)finish()};timer=setTimeout(finish,2500);speechSynthesis.addEventListener('voiceschanged',changed);signal?.addEventListener('abort',finish,{once:true});if(signal?.aborted)finish()});
 }

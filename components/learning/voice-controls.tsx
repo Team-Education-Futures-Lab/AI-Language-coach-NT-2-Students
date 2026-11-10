@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {Mic,Phone,PhoneOff,MessageCircle,Volume2,VolumeX,Settings2} from 'lucide-react';
 import {B} from './translation';
 import {useCoach} from './coach-preferences';
-import {bestVoice,coachSpeechSegments,languageName} from '@/lib/learning-language';
+import {availableBrowserVoices,bestVoice,coachSpeechSegments,languageName} from '@/lib/learning-language';
 import {localCoachSpeech,preloadCoachVoice} from '@/lib/local-tts';
 import {SpeechPlayback,unlockCoachAudio} from '@/lib/speech-playback';
 import {createVoiceActivity} from '@/lib/voice-activity';
@@ -55,11 +55,11 @@ export function VoiceControls({reply,replyKey,replyLanguage,requestError,disable
   const timer=setTimeout(()=>{void preloadCoachVoice().then(()=>localCoachSpeech(parts,{profile,rate,signal:c.signal})).catch(()=>{})},350);
   return()=>{clearTimeout(timer);c.abort()};
  },[reply,replyLanguage,language,profile,rate,readAloud,disabled,engineMode]);
- async function speak(text:string,supportLanguage?:string){
+ async function speak(text:string,supportLanguage?:string,forceBrowser=false){
   prefetch.current?.abort();stopSpeech();const g=speechSequence.current;setError('');setNotice('');
   const control=new AbortController();synthesis.current=control;const chunks=coachSpeechSegments(text,supportLanguage||replyLanguage||language);
   try{
-   if(engineMode==='natural'){
+   if(engineMode==='natural'&&!forceBrowser&&chunks.every(chunk=>voiceLanguage(chunk.language))){
     if(typeof AudioContext==='undefined')throw Error('Deze browser kan de lokale stem niet afspelen. Kies de browserstem in Spraakinstellingen.');
     setPhase('preparing');let streamed=false;
     const player=new SpeechPlayback(()=>{if(g===speechSequence.current){setNotice('');setPhase('speaking')}});playback.current=player;
@@ -69,7 +69,7 @@ export function VoiceControls({reply,replyKey,replyLanguage,requestError,disable
    }else for(const chunk of chunks){
     if(g!==speechSequence.current)return;
     if(!('speechSynthesis' in window))throw Error('Deze browser heeft geen voorleesstem. Je kunt het antwoord lezen.');
-    const voice=bestVoice(speechSynthesis.getVoices(),chunk.language,chunk.language==='nl'?voiceURI:'');
+    const voice=bestVoice(await availableBrowserVoices(control.signal),chunk.language,chunk.language==='nl'?voiceURI:'');
     if(!voice)throw Error('Geen stem beschikbaar voor '+languageName(chunk.language)+'. Je kunt het antwoord lezen of een systeemstem toevoegen in je apparaatinstellingen.');
     setPhase('speaking');
     await new Promise<void>((resolve,reject)=>{
@@ -80,7 +80,7 @@ export function VoiceControls({reply,replyKey,replyLanguage,requestError,disable
     });
    }
    if(g!==speechSequence.current)return;setNotice('');setPhase('idle');if(auto.current)void record(true);
-  }catch(e){if(g!==speechSequence.current)return;cancel();setError((e as Error).message)}
+  }catch(e){if(g!==speechSequence.current)return;if(engineMode==='natural'&&!forceBrowser&&chunks.every(chunk=>voiceLanguage(chunk.language))){return speak(text,supportLanguage,true)}cancel();setError((e as Error).message)}
  }
  function toggleReadAloud(){
   unlockCoachAudio();const next=!readEnabled.current;saveReadAloud(next);
