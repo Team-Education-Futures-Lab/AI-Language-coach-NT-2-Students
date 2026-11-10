@@ -8,5 +8,6 @@ export async function studentProfile(userId:string):Promise<Profile>{
  db.prepare('SELECT override_level FROM student_levels WHERE user_id=?').bind(userId).first<{override_level:string|null}>(),
  // Only server-validated, uniquely completed exercises unlock levels. Repeating cannot farm XP.
  db.prepare("SELECT xp,date FROM activities WHERE user_id=? AND kind='exercise' ORDER BY date").bind(userId).all<{xp:number;date:string}>()]);
- const progress=calculateProgress(activity.results,override?.override_level);return {...defaultProfile,...(row?JSON.parse(row.data):{}),level:progress.level,adaptive:true,progress};
+ const stored=row?JSON.parse(row.data):{};delete stored.avatar;
+ const progress=calculateProgress(activity.results,override?.override_level);return {...defaultProfile,...stored,level:progress.level,adaptive:true,progress};
 }
