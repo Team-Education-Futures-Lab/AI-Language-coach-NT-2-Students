@@ -13,3 +13,14 @@ test('each prerecorded tour step matches current displayed copy and a real MP3',
 test('every original voice has its own pre-encoded reference',()=>{
  for(const profile of ['F1','F2','F3','F4','F5','M1','M2','M3','M4','M5']){const ref=JSON.parse(fs.readFileSync(`public/voice-references/${profile}.json`,'utf8'));assert.ok(ref.refText.includes('personal language coach'));assert.ok(ref.tokens.length>100);assert.equal(ref.tokens.length%8,0);assert.ok(ref.tokens.every(n=>Number.isInteger(n)&&n>=0))}
 });
+test('whole tour preloads with at most three downloads and playback reuses the same files',async()=>{
+ const manifest=JSON.parse(fs.readFileSync('public/tour-audio/manifest.json','utf8'));
+ const {TourAudioCache}=read('lib/tour-audio-cache.ts');let calls=0,active=0,peak=0;
+ const ctx={exports:{},AbortSignal,DOMException,fetch:async()=>{calls++;active++;peak=Math.max(peak,active);await new Promise(r=>setTimeout(r,1));active--;return{ok:true,blob:async()=>new Blob(['audio'])}},require:name=>name.includes('manifest')?manifest:name.includes('tour-audio-cache')?{TourAudioCache}:{spokenText}};
+ vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/tour-recordings.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,ctx);
+ await ctx.exports.preloadTourRecordings('fa','F1',new AbortController().signal);
+ assert.equal(calls,20);assert.ok(peak<=3);
+ const [lang,profile,text]=JSON.parse(Object.keys(manifest).find(k=>JSON.parse(k)[0]==='fa'));
+ await ctx.exports.prerecordedTourAudio(text,lang,profile);assert.equal(calls,20);
+ await ctx.exports.preloadTourRecordings('fa','M1',new AbortController().signal);assert.equal(calls,20);
+});

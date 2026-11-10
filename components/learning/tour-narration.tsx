@@ -3,7 +3,7 @@ import {useEffect,useState,useRef} from 'react';
 import {Volume2,VolumeX} from 'lucide-react';
 import {B} from './translation';
 import {availableBrowserVoices,bestVoice} from '@/lib/learning-language';
-import {prerecordedTourAudio,tourRecordingPath} from '@/lib/tour-recordings';
+import {prerecordedTourAudio,tourRecordingPath,preloadTourRecordings,hasRecordedTour} from '@/lib/tour-recordings';
 import {storedTourAudio} from '@/lib/tour-audio-storage';
 import {TourAudioCache} from '@/lib/tour-audio-cache';
 import {localCoachSpeech} from '@/lib/local-tts';
@@ -16,10 +16,11 @@ export function TourNarration({text,nextText,language,active}:{text:string;nextT
  const [profile,setProfile]=useState('F1');
  useEffect(()=>{const sync=()=>{try{setProfile(localStorage.getItem('taalcoach-voice-profile-v1')||'F1')}catch{}};sync();window.addEventListener('taalcoach-voice',sync);return()=>window.removeEventListener('taalcoach-voice',sync)},[]);
  useEffect(()=>{session.current=new AbortController();return()=>{session.current.abort();audioCache.current.clear()}},[active,language,profile,enabled]);
+ useEffect(()=>{if(!active||profile==='browser')return;const c=new AbortController();void preloadTourRecordings(language,profile,c.signal);return()=>c.abort()},[active,language,profile]);
  function prepare(value:string,onChunk?:Parameters<typeof localCoachSpeech>[1]['onChunk']){
   const clean=spokenText(value),selected=validVoiceProfile(profile)?profile:'F1';
   const key=JSON.stringify([language,selected,clean,tourRecordingPath(clean,language,selected)||null]);
-  return audioCache.current.get(key,()=>storedTourAudio(key,async()=>await prerecordedTourAudio(clean,language,selected,session.current.signal)??await localCoachSpeech([{text:clean,language}],{profile:selected,rate:.95,signal:session.current.signal,onChunk}).then(result=>result.file)));
+  return audioCache.current.get(key,async()=>await prerecordedTourAudio(clean,language,selected,session.current.signal)??await storedTourAudio(key,async()=>await localCoachSpeech([{text:clean,language}],{profile:selected,rate:.95,signal:session.current.signal,onChunk}).then(result=>result.file)));
  }
  // Only one step ahead: avoid a long background queue delaying a learner who skips ahead.
  useEffect(()=>{if(active&&enabled&&nextText&&status==='Voorlezen…'&&profile!=='browser'&&coachVoiceLanguage(language))void prepare(nextText).catch(()=>{})},[nextText,status,active,enabled,language,profile]);
@@ -48,5 +49,5 @@ export function TourNarration({text,nextText,language,active}:{text:string;nextT
   }
   void read();return()=>{control.abort();player?.stop();if(utterance){utterance.onend=null;utterance.onerror=null;speechSynthesis.cancel()}};
  },[text,language,active,enabled,profile]);
- return <div className="tour-narration"><button type="button" className="tour-sound-toggle" aria-pressed={enabled} onClick={()=>{if(!enabled)unlockCoachAudio();setEnabled(v=>!v)}}>{enabled?<Volume2 size={18}/>:<VolumeX size={18}/>}<B>{enabled?'Voorlezen aan':'Voorlezen uit'}</B></button>{status&&<small role="status"><B>{status}</B></small>}{error&&<p role="alert"><B>{error}</B></p>}</div>
+ return <div className="tour-narration">{profile!=='F1'&&profile!=='browser'&&hasRecordedTour(language)&&<button type="button" className="tour-sound-toggle" onClick={()=>setProfile('F1')}><B>Snelle rondleiding met Vrouw 1</B></button>}<button type="button" className="tour-sound-toggle" aria-pressed={enabled} onClick={()=>{if(!enabled)unlockCoachAudio();setEnabled(v=>!v)}}>{enabled?<Volume2 size={18}/>:<VolumeX size={18}/>}<B>{enabled?'Voorlezen aan':'Voorlezen uit'}</B></button>{status&&<small role="status"><B>{status}</B></small>}{error&&<p role="alert"><B>{error}</B></p>}</div>
 }
