@@ -1,3 +1,4 @@
+import {coachTourSteps} from './coach-tour';
 // Core interface vocabulary works without an AI request. Other UI translations are cached on the server.
 const terms:Record<string,Record<string,string>>={
  en:{'Mijn leerplek':'My learning space','Oefeningen':'Exercises','AI-coach':'AI coach','Leeshoek':'Reading corner','Mijn voortgang':'My progress','Woordenboek':'Dictionary','Spelling':'Spelling','Begrijpend lezen':'Reading comprehension','Luisteren':'Listening','Schrijven':'Writing','Formuleren':'Expressing yourself','Alles':'All','Niveau':'Level','Bekijk of herhaal':'Review or repeat','Begin oefening':'Start exercise'},
@@ -68,3 +69,5 @@ const tourCopy:Record<string,[string,string]>={
  'Dit onderwerp was nog lastig. We oefenen het nog een keer.':['This topic was difficult. Let’s practise it again.','كان هذا الموضوع صعبًا. لنتدرّب عليه مرة أخرى.']
 };
 for(const [text,values] of Object.entries(tourCopy))['en','ar'].forEach((language,i)=>{(terms[language]??={})[text]=values[i]});
+
+for(const step of coachTourSteps){terms.en[step.title]=step.en[0];terms.en[step.body]=step.en[1]}
