@@ -1,5 +1,6 @@
 'use client';
 import {useCoach,PersonalizeCoachButton,CoachLanguagePicker} from '@/components/learning/coach-preferences';
+import {HomeDiscover} from './home-discover';
 import {ProfileAvatar} from './profile-avatar';
 import {CoachTour} from './coach-tour';
 import {recommendPractice,levelCoachingInstruction} from '@/lib/practice-recommendation';
@@ -131,7 +132,7 @@ function Platform(){const {text:coachText,coach,supportLanguage}=useCoach();
  {notice&&!mission&&!editor&&!game&&<div className="notice" role="status">{notice}<button onClick={()=>setNotice('')} aria-label="Melding sluiten"><B><X size={16}/></B></button></div>}
  {view==='home'&&<><div className="page-heading"><div><h1><B>{profile.name?`Fijn dat je er bent, ${profile.name}`:'Fijn dat je er bent'}<span className="heading-dot"><B>.</B></span></B></h1><p><B>Oefen stap voor stap. Je coach helpt je.</B></p></div><button data-tour="level" className="level-button" onClick={()=>setSettings(true)}><B><GraduationCap size={18}/>Niveau {level}<ChevronRight size={15}/></B></button></div>
  {recommended&&<section className="today-practice panel" data-tour="today"><div><span className="eyebrow"><B>JOUW START VANDAAG</B></span><h2><B>Wat gaan we vandaag leren?</B></h2><h3>{recommended.exercise.title}</h3><p><B>{recommended.reason}</B></p><span className="tag">{recommended.exercise.level} · {recommended.exercise.minutes} <B>minuten</B></span></div><button className="primary-button" disabled={!loaded||!profileReady} onClick={startRecommended}><B>{loaded?'Start oefening':'Even laden…'}</B><ChevronRight size={18}/></button></section>}
- <div className="home-shortcuts"><button className="outline-button" onClick={()=>openExercises('all')}><NotebookPen size={19}/><B>Alle oefeningen</B></button><button className="outline-button" onClick={()=>go('missions')}><MessageCircle size={19}/><B>Praat met je coach</B></button><button className="outline-button" onClick={()=>go('progress')}><ChartNoAxesCombined size={19}/><B>Mijn voortgang</B></button></div></>}
+ <div className="home-shortcuts"><button className="outline-button" onClick={()=>openExercises('all')}><NotebookPen size={19}/><B>Alle oefeningen</B></button><button className="outline-button" onClick={()=>go('missions')}><MessageCircle size={19}/><B>Praat met je coach</B></button><button className="outline-button" onClick={()=>go('progress')}><ChartNoAxesCombined size={19}/><B>Mijn voortgang</B></button></div><HomeDiscover level={level}/></>}
  {view==='atelier'&&learning.loaded&&learning.error&&<div className="error-banner" role="alert">{learning.error}<button onClick={learning.load}><B>Opnieuw proberen</B></button></div>}
  {view==='atelier'&&!learning.loaded&&<section className="panel"><p role="status">{learning.error||'Je leerroute laden…'}</p>{learning.error&&<button className="outline-button" onClick={learning.load}><B>Opnieuw proberen</B></button>}</section>}
 
