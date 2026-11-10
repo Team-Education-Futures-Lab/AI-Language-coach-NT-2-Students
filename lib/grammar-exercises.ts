@@ -1,7 +1,7 @@
 import type {Exercise,Question} from './exercises';
 const q=(prompt:string,accepted:string[],explanation:string):Question=>({prompt,accepted,explanation});
 export const grammarExercises:Exercise[]=[
- {id:'gram-lidwoorden',category:'grammatica',focus:'Lidwoorden',level:'A1',title:'De, het en een',description:'Leer een zelfstandig naamwoord samen met zijn lidwoord.',minutes:6,passage:'Een lidwoord staat voor een zelfstandig naamwoord: de tafel, het boek, een pen. In het meervoud gebruiken we de: de boeken. Verkleinwoorden in het enkelvoud krijgen het: het tafeltje. Leer bij nieuwe woorden steeds het lidwoord mee.',questions:[
+ {id:'gram-lidwoorden',category:'grammatica',focus:'Lidwoorden',level:'A1',title:'De, het en een',description:'Oefen met de, het en een.',minutes:6,passage:'Je zegt: de tafel, het boek en een pen. Meer dan één boek? Dan zeg je: de boeken. Een klein tafeltje? Dan zeg je: het tafeltje. Leer de of het samen met het woord.',questions:[
  q('Vul de of het in: … boek',['het'],'Je leert de combinatie: het boek.'),q('Vul de of het in: … tafeltje',['het'],'Een verkleinwoord in het enkelvoud krijgt het.'),q('Vul de of het in: … boeken',['de'],'Bij een meervoud gebruiken we de.'),q('Vul de of het in: … tafel',['de'],'Je leert de combinatie: de tafel.')
  ]},
  {id:'gram-meervoud',category:'grammatica',focus:'Enkelvoud & meervoud',level:'A1',title:'Van één naar meer',description:'Maak meervouden en let op de klank van het woord.',minutes:7,passage:'Veel meervouden krijgen -en of -s. Boek wordt boeken, tafel wordt tafels. Soms verandert de spelling om de klank te bewaren: raam → ramen, pen → pennen. Niet alle woorden volgen één regel; leer nieuwe meervouden ook als woordpaar.',questions:[

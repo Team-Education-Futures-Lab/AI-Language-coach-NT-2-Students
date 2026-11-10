@@ -13,5 +13,5 @@ export function reflectionMessages(messages:AIMessage[]):AIMessage[]{
 export function reviewedReflection(raw:string,messages:AIMessage[]){
  const sentences=messages.filter(m=>m.role==='user').slice(-8).map(m=>m.content);let messageIndex=Math.max(0,sentences.length-1),stepIndex=0;
  try{const j=JSON.parse(raw.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,''));if(Number.isInteger(j.messageIndex)&&j.messageIndex>=0&&j.messageIndex<sentences.length)messageIndex=j.messageIndex;if(Number.isInteger(j.stepIndex)&&j.stepIndex>=0&&j.stepIndex<reflectionSteps.length)stepIndex=j.stepIndex}catch{}
- return `Je hebt het gesprek in eigen woorden geoefend.\n\nJouw eigen zin om op terug te kijken:\n“${sentences[messageIndex]||''}”\n\nVolgende oefenstap\n${reflectionSteps[stepIndex]}`;
+ return `Wat ging goed?\nJe hebt zelf Nederlands gebruikt.\n\nWat kan beter?\nDeze zin is nog niet beoordeeld. Lees hem nog eens:\n“${sentences[messageIndex]||''}”\n\nWat kan ik nu oefenen?\n${reflectionSteps[stepIndex]}`;
 }

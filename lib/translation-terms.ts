@@ -46,3 +46,25 @@ for(const [text,translations] of Object.entries(essentials))['en','ar','fa','tr'
 Object.assign(terms.en,{'Vraag gerust uitleg in jouw taal. We oefenen Nederlands, één zin tegelijk.':'Ask for help in your language. We practise Dutch, one sentence at a time.','Mijn oefendoelen':'My practice goals'});
 Object.assign(terms.ar,{'Vraag gerust uitleg in jouw taal. We oefenen Nederlands, één zin tegelijk.':'اطلب الشرح بلغتك. نتدرّب على الهولندية، جملة واحدة في كل مرة.','Mijn oefendoelen':'أهداف التدريب'});
 Object.assign(terms.fa,{'Vraag gerust uitleg in jouw taal. We oefenen Nederlands, één zin tegelijk.':'به زبان خودت سؤال بپرس. هلندی را هر بار یک جمله تمرین می‌کنیم.','Mijn oefendoelen':'هدف‌های تمرین من'});
+
+// The first tour works in English and Arabic even before an AI translation returns.
+const tourCopy:Record<string,[string,string]>={
+ 'Start met één oefening':['Start with one exercise','ابدأ بتمرين واحد'],
+ 'Hier staat een oefening voor jou. Je ziet het niveau en de tijd. Klik op Start oefening om te beginnen.':['Here is an exercise for you. You can see its level and time. Select Start exercise to begin.','هنا تمرين لك. ترى المستوى والوقت. اضغط على بدء التمرين لتبدأ.'],
+ 'Mijn niveau':['My level','مستواي'],
+ 'Hier zie je jouw niveau. Nieuw? Begin bij A1. Doe de korte taalcheck als je niet weet wat bij je past. Je docent kan je niveau aanpassen.':['Here is your level. New to Dutch? Start at A1. Try the short language check if you are unsure. Your teacher can change your level.','هنا ترى مستواك. هل بدأت تعلم الهولندية حديثًا؟ ابدأ بالمستوى A1. جرّب اختبار اللغة القصير إذا لم تعرف مستواك. يمكن لمعلمك تعديل مستواك.'],
+ 'Vraag mij om hulp':['Ask me for help','اطلب مساعدتي'],
+ 'Je kunt met mij typen of praten. Bij een oefening klik je op Hulp nodig? Ik geef een tip. Jij probeert het antwoord zelf.':['You can type or talk to me. In an exercise, select Need help? I give a hint. You try the answer yourself.','يمكنك الكتابة أو التحدث معي. في التمرين، اضغط على هل تحتاج مساعدة؟ أعطيك تلميحًا. وأنت تحاول الإجابة بنفسك.'],
+ 'Mijn voortgang':['My progress','تقدمي'],
+ 'Hier zie je wat je vandaag hebt gedaan. In Mijn voortgang zie je al je oefeningen. Fouten maken mag. Zo leer je!':['Here is what you did today. My progress shows all your exercises. Mistakes are OK. They help you learn!','هنا ترى ما فعلته اليوم. في صفحة تقدمي ترى كل تمارينك. لا بأس بالأخطاء. هكذا تتعلم!'],
+ 'Start rondleiding':['Start tour','ابدأ الجولة'],
+ 'Overslaan':['Skip','تخطَّ'],
+ 'Volgende':['Next','التالي'],
+ 'Terug':['Back','رجوع'],
+ 'Start oefening':['Start exercise','ابدأ التمرين'],
+ 'Bekijk de rondleiding':['Show the tour','شاهد الجولة'],
+ 'Wat gaan we vandaag leren?':['What will we learn today?','ماذا سنتعلم اليوم؟'],
+ 'Deze oefening past bij jouw niveau.':['This exercise matches your level.','هذا التمرين يناسب مستواك.'],
+ 'Dit onderwerp was nog lastig. We oefenen het nog een keer.':['This topic was difficult. Let’s practise it again.','كان هذا الموضوع صعبًا. لنتدرّب عليه مرة أخرى.']
+};
+for(const [text,values] of Object.entries(tourCopy))['en','ar'].forEach((language,i)=>{(terms[language]??={})[text]=values[i]});

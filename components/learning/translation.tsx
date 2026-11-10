@@ -3,7 +3,7 @@ import {createContext,useContext,useEffect,useState,useRef,useCallback,Children,
 import {languages} from '@/lib/profile';
 import {interfaceTranslation} from '@/lib/translation-terms';
 import {normalizeLanguage,languageName,languageDirection} from '@/lib/learning-language';
-type Context={language:string;cache:Record<string,string>;queue:(s:string)=>void;error:string;choose:(s:string)=>void;retry:()=>void;translating:boolean;revision:number};
+type Context={language:string;cache:Record<string,string>;queue:(s:string,priority?:boolean)=>void;error:string;choose:(s:string)=>void;retry:()=>void;translating:boolean;revision:number};
 const TranslationContext=createContext<Context>({language:'nl',cache:{},queue:()=>{},error:'',choose:()=>{},retry:()=>{},translating:false,revision:0});
 const storageKey=(language:string)=>'taalcoach-ui-v3:'+language;
 function readCache(language:string){try{return JSON.parse(localStorage.getItem(storageKey(language))||'{}') as Record<string,string>}catch{return {}}}
@@ -25,7 +25,7 @@ export function TranslationProvider({children}:{children:ReactNode}){
     if(delay&&delay<=300&&autoRetries.current++<1)timer.current=setTimeout(()=>{paused.current=false;void flush()},delay*1000);
    }}finally{if(g===generation.current){running.current=false;if(pending.current.size&&!paused.current)timer.current=setTimeout(()=>void flush(),180);else setTranslating(false)}}
  }
- const queue=useCallback((s:string)=>{if(interfaceTranslation(s,languageRef.current)||languageRef.current==='nl'||requested.current.has(s)||cached.current[s]||!/[\p{L}]/u.test(s))return;pending.current.add(s);if(!paused.current&&!timer.current&&!running.current)timer.current=setTimeout(()=>void flush(),180)},[]);
+ const queue=useCallback((s:string,priority=false)=>{if(interfaceTranslation(s,languageRef.current)||languageRef.current==='nl'||requested.current.has(s)||cached.current[s]||!/[\p{L}]/u.test(s))return;if(priority)pending.current=new Set([s,...pending.current]);else pending.current.add(s);if(!paused.current&&!timer.current&&!running.current)timer.current=setTimeout(()=>void flush(),180)},[]);
  const reset=useCallback(()=>{generation.current++;abort.current?.abort();if(timer.current)clearTimeout(timer.current);timer.current=null;running.current=false;paused.current=false;pending.current.clear();requested.current.clear();setError('');autoRetries.current=0;setTranslating(false);setRevision(r=>r+1)},[]);
  const choose=useCallback((value:string)=>{const next=normalizeLanguage(value);if(next===languageRef.current)return;reset();languageRef.current=next;cached.current=readCache(next);setCache(cached.current);setLanguage(next);try{localStorage.setItem('taalcoach-language',next)}catch{}
   if(location.pathname.startsWith('/app'))void fetch('/api/profile/language',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({language:next})}).then(r=>{if(!r.ok)throw Error()}).catch(()=>setError('Je taal is op dit apparaat bewaard. Opslaan in je profiel lukte nog niet.'));

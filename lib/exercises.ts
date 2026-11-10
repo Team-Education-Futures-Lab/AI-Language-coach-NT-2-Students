@@ -5,10 +5,10 @@ export type Exercise={id:string;category:Category;level:'A1'|'A2'|'B1'|'B2'|'C1'
 export const categories:{id:Category;name:string;description:string}[]=[
  {id:'grammatica',name:'Grammatica',description:'Lidwoorden, enkelvoud, meervoud en de drie tijden.'},
  {id:'spelling',name:'Spelling',description:'Werkwoorden, klanken en lastige woorden.'},
- {id:'lezen',name:'Begrijpend lezen',description:'Begrijp de kern, details en bedoeling van een tekst.'},
- {id:'luisteren',name:'Luisteren',description:'Haal informatie uit berichten en mededelingen.'},
- {id:'schrijven',name:'Schrijven',description:'Schrijf een bericht, e-mail of onderbouwde tekst.'},
- {id:'formuleren',name:'Formuleren',description:'Maak je zinnen duidelijk, passend en precies.'}
+ {id:'lezen',name:'Begrijpend lezen',description:'Lees een tekst en beantwoord de vragen.'},
+ {id:'luisteren',name:'Luisteren',description:'Luister naar een bericht. Wat hoor je?'},
+ {id:'schrijven',name:'Schrijven',description:'Oefen met een bericht of e-mail.'},
+ {id:'formuleren',name:'Formuleren',description:'Maak duidelijke en vriendelijke zinnen.'}
 ];
 const text=(prompt:string,accepted:string[],explanation:string):Question=>({prompt,accepted,explanation});
 const choice=(prompt:string,options:string[],correct:number,explanation:string):Question=>({prompt,options,correct,explanation});
