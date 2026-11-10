@@ -6,7 +6,7 @@ export const coachCharacters = [
 ] as const;
 export type CoachCharacter=typeof coachCharacters[number]['id'];
 export type CoachPreferences={name:string;character:CoachCharacter};
-export const defaultCoach:CoachPreferences={name:'Pip',character:'fox'};
+export const defaultCoach:CoachPreferences={name:'Personal language coach',character:'fox'};
 export function validateCoach(value:unknown):CoachPreferences|null {
   if(!value||typeof value!=='object')return null;
   const v=value as Record<string,unknown>;
