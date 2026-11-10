@@ -3,6 +3,7 @@ import {useEffect,useState,useRef} from 'react';
 import {Volume2,VolumeX} from 'lucide-react';
 import {B} from './translation';
 import {availableBrowserVoices,bestVoice} from '@/lib/learning-language';
+import {storedTourAudio} from '@/lib/tour-audio-storage';
 import {TourAudioCache} from '@/lib/tour-audio-cache';
 import {localCoachSpeech} from '@/lib/local-tts';
 import {SpeechPlayback,unlockCoachAudio} from '@/lib/speech-playback';
@@ -16,7 +17,8 @@ export function TourNarration({text,nextText,language,active}:{text:string;nextT
  useEffect(()=>{session.current=new AbortController();return()=>{session.current.abort();audioCache.current.clear()}},[active,language,profile,enabled]);
  function prepare(value:string,onChunk?:Parameters<typeof localCoachSpeech>[1]['onChunk']){
   const clean=spokenText(value),selected=validVoiceProfile(profile)?profile:'F1';
-  return audioCache.current.get(JSON.stringify([language,selected,clean]),()=>localCoachSpeech([{text:clean,language}],{profile:selected,rate:.95,signal:session.current.signal,onChunk}).then(result=>result.file));
+  const key=JSON.stringify([language,selected,clean]);
+  return audioCache.current.get(key,()=>storedTourAudio(key,()=>localCoachSpeech([{text:clean,language}],{profile:selected,rate:.95,signal:session.current.signal,onChunk}).then(result=>result.file)));
  }
  // Only one step ahead: avoid a long background queue delaying a learner who skips ahead.
  useEffect(()=>{if(active&&enabled&&nextText&&status==='Voorlezen…'&&profile!=='browser'&&voiceLanguage(language))void prepare(nextText).catch(()=>{})},[nextText,status,active,enabled,language,profile]);
