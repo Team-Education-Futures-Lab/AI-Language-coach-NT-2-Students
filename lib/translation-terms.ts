@@ -59,6 +59,7 @@ const tourCopy:Record<string,[string,string]>={
  'Je kunt met mij typen of praten. Bij een oefening klik je op Hulp nodig? Ik geef een tip. Jij probeert het antwoord zelf.':['You can type or talk to me. In an exercise, select Need help? I give a hint. You try the answer yourself.','يمكنك الكتابة أو التحدث معي. في التمرين، اضغط على هل تحتاج مساعدة؟ أعطيك تلميحًا. وأنت تحاول الإجابة بنفسك.'],
  'Mijn voortgang':['My progress','تقدمي'],
  'Hier zie je wat je vandaag hebt gedaan. In Mijn voortgang zie je al je oefeningen. Fouten maken mag. Zo leer je!':['Here is what you did today. My progress shows all your exercises. Mistakes are OK. They help you learn!','هنا ترى ما فعلته اليوم. في صفحة تقدمي ترى كل تمارينك. لا بأس بالأخطاء. هكذا تتعلم!'],
+ 'Naar de startpagina':['Back to home','العودة إلى الصفحة الرئيسية'],
  'Start rondleiding':['Start tour','ابدأ الجولة'],
  'Overslaan':['Skip','تخطَّ'],
  'Volgende':['Next','التالي'],
@@ -77,6 +78,7 @@ for(const [lang,steps] of Object.entries(tourTranslations))steps.forEach(([title
 for(const [lang,[title,body]] of Object.entries(tourIntro)){(terms[lang]??={})[tourIntro.nl[0]]=title;terms[lang][tourIntro.nl[1]]=body}
 
 const tourControls:Record<string,[string,string,string]>={
+ 'Naar de startpagina':['رفتن به صفحه شروع','返回首页','חזרה לדף הבית'],
  'Start rondleiding':['شروع راهنما','开始导览','התחלת הסיור'],
  'Overslaan':['رد کردن','跳过','דילוג'],
  'Volgende':['بعدی','下一步','הבא'],
@@ -88,3 +90,5 @@ const tourControls:Record<string,[string,string,string]>={
  'Voorlezen…':['در حال خواندن…','正在朗读…','מקריאים…']
 };
 for(const [text,values] of Object.entries(tourControls))['fa','zh','he'].forEach((lang,i)=>{(terms[lang]??={})[text]=values[i]});
+
+terms.en['Naar de startpagina']='Back to home';
