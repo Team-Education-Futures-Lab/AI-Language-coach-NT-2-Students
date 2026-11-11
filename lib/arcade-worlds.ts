@@ -27,7 +27,7 @@ const worldWords=[
  [['ster','maan','zon','wereld','reis','nacht'],['schip','heelal','plan','team','doel','einde']],
 ];
 const advancedWords=[
- [['biodiversiteit','begroeiing','kringloop','oever','vegetatie','natuurbehoud'],['ecosysteem','leefgebied','landschap','evenwicht','milieu','natuurgebied']],
+ [['biodiversiteit','begroeiing','kringloop','oever','vegetatie','bodem'],['ecosysteem','leefgebied','landschap','evenwicht','milieu','natuurgebied']],
  [['delfstof','bodemlaag','formatie','erosie','duisternis','vindplaats'],['mineraal','gesteente','kristal','gewelf','bodemonderzoek','grondwater']],
  [['onderhandeling','concurrentie','koopkracht','handel','onderneming','omzet'],['aanbod','assortiment','betaalmiddel','prijsverschil','verkoopcijfer','marktplein']],
  [['temperatuur','neerslag','gletsjer','weersverwachting','opwarming','vorst'],['klimaat','vriespunt','smeltwater','poolgebied','ijsoppervlak','natuurverschijnsel']],
