@@ -8,5 +8,5 @@ export function parseNewsSearch(xml:string,now=Date.now()){
   try{const parsed=new URL(url);if(parsed.protocol!=='https:'||parsed.hostname!=='news.google.com'||parsed.username||parsed.password||!title||!Number.isFinite(date)||date>now+86400000)return []}catch{return []}
   const key=title.toLocaleLowerCase()+'|'+source;if(seen.has(key))return [];seen.add(key);
   return [{title,url,source,published_at:new Date(date).toISOString()}];
- }).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at)).slice(0,20);
+ }).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at)).slice(0,4);
 }
