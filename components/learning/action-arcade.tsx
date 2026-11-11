@@ -16,7 +16,7 @@ export function ActionArcade({mode,level,stage,tone,onEnd,audio}:Props){
  const canvas=useRef<HTMLCanvasElement>(null),shell=useRef<HTMLDivElement>(null),keys=useRef(new Set<string>()),callbacks=useRef({tone,onEnd});callbacks.current={tone,onEnd};
  const [paused,setPaused]=useState(false),[slow,setSlow]=useState(false),[hud,setHud]=useState({lives:5,score:0,round:0,text:'',tip:'',done:0,remaining:180});const pauseRef=useRef(false),slowRef=useRef(false);pauseRef.current=paused;slowRef.current=slow;
  useEffect(()=>{const clear=()=>{keys.current.clear();setPaused(true)},hidden=()=>{if(document.hidden)clear()};window.addEventListener('blur',clear);document.addEventListener('visibilitychange',hidden);canvas.current?.focus();return()=>{window.removeEventListener('blur',clear);document.removeEventListener('visibilitychange',hidden)}},[]);
- useEffect(()=>{audio.setPlaying(!paused,mode);return()=>audio.setPlaying(false,mode)},[audio,paused,mode]);
+ useEffect(()=>{audio.setPlaying(!paused,mode,stage);return()=>audio.setPlaying(false,mode,stage)},[audio,paused,mode,stage]);
  useEffect(()=>{
   const c=canvas.current,ctx=c?.getContext('2d');if(!c||!ctx)return;
   const deck:Prompt[]=worldDeck(level,stage,mode==='space'?'space':'race').map(p=>({...p,options:shuffled(p.options)}));
