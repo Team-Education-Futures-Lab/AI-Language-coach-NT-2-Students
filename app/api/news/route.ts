@@ -1,18 +1,24 @@
+import {newsTopicMatches} from '@/lib/news-search';
 import {createHash} from 'node:crypto';
 import {database,identity,fail} from '@/lib/server';
 import {parseFeed,weekKey} from '@/lib/news';
 import {studentProfile} from '@/lib/server-profile';
 import {aiAllowance,aiProvider,generateText} from '@/lib/server-ai';
 export const maxDuration=60;
-const feeds=[['https://feeds.nos.nl/nosnieuwsalgemeen','NOS'],['https://feeds.nos.nl/nosnieuwstech','NOS'],['https://feeds.nos.nl/nosnieuwseconomie','NOS'],['https://www.rivm.nl/nieuws/rss.xml','RIVM']];
+const feeds=[['https://feeds.nos.nl/nosnieuwsalgemeen','NOS'],['https://feeds.nos.nl/nosnieuwstech','NOS'],['https://feeds.nos.nl/nossportalgemeen','NOS'],['https://feeds.nos.nl/nosnieuwsbinnenland','NOS'],['https://feeds.nos.nl/nosnieuwsbuitenland','NOS'],['https://feeds.nos.nl/nosnieuwseconomie','NOS'],['https://www.rivm.nl/nieuws/rss.xml','RIVM']];
 export async function GET(r:Request){const u=await identity(r);if(!u)return fail('Log in om je vaknieuws te lezen.',401);try{
- const p=await studentProfile(u);const field=(new URL(r.url).searchParams.get('field')||p.field).trim().slice(0,160);
+ const query=(new URL(r.url).searchParams.get('q')||'').trim().slice(0,160);const p=await studentProfile(u);const field=(new URL(r.url).searchParams.get('field')||p.field).trim().slice(0,160);
  const fingerprint='personal:'+createHash('sha256').update(JSON.stringify([field,p.interests,p.level])).digest('hex');const week=weekKey(),db=database();
  const cached=await db.prepare('SELECT * FROM news WHERE field=? ORDER BY week DESC LIMIT 4').bind(fingerprint).all();
  const readingPrompt=['A1','A2'].includes(p.level)?'Lees de titel. Zoek drie belangrijke woorden en leg ze uit. Vertel in één of twee korte zinnen waar het artikel over gaat.':p.level==='B1'?'Vat de kern in drie zinnen samen. Welke nieuwe woorden passen bij jouw opleiding of interesses?':'Vat het standpunt samen. Onderscheid feiten van meningen en geef een onderbouwde reactie vanuit jouw vakgebied.';
- if(cached.results.some(a=>a.week===week))return Response.json({articles:cached.results,readingPrompt,level:p.level});
+ if(!query&&cached.results.some(a=>a.week===week))return Response.json({articles:cached.results,readingPrompt,level:p.level});
  const loaded=await Promise.allSettled(feeds.map(async([url,source])=>{const response=await fetch(url,{signal:AbortSignal.timeout(10000),next:{revalidate:3600}});if(!response.ok)throw Error();return parseFeed(await response.text()).map(a=>({...a,source}))}));
  const all=loaded.flatMap(r=>r.status==='fulfilled'?r.value:[]).filter(a=>Date.parse(a.published_at)>Date.now()-14*86400000&&Date.parse(a.published_at)<Date.now()+86400000);const unique=[...new Map(all.map(a=>[a.url,a])).values()];
+ if(query){
+  if(loaded.every(result=>result.status==='rejected'))return fail('De nieuwsbronnen zijn tijdelijk niet bereikbaar. Probeer opnieuw.',503);
+  const articles=unique.filter(a=>newsTopicMatches(a.title,query)).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at)).slice(0,8).map(a=>({...a,id:createHash('sha256').update(a.url).digest('hex'),week:weekKey(),selected_at:new Date().toISOString()}));
+  return Response.json({articles,readingPrompt,level:p.level,selection:'topic-search'});
+ }
  const words=(field+' '+p.interests).toLowerCase().match(/[\p{L}]{4,}/gu)||[];
  const rank=(title:string)=>words.reduce((n,w)=>n+(title.toLowerCase().includes(w)?1:0),0);
  const candidates=unique.sort((a,b)=>rank(b.title)-rank(a.title)||Date.parse(b.published_at)-Date.parse(a.published_at)).slice(0,35);
