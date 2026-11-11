@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {enemyNames,platformEnemy,driftEnemy} from '../lib/arcade-enemies.ts';
+test('each game has five named world enemies',()=>{for(const names of Object.values(enemyNames))assert.equal(new Set(names).size,5)});
+test('enemy movement stays in bounds and flying enemies stay above ground',()=>{for(let stage=1;stage<=5;stage++)for(let t=0;t<30;t+=.2){const b=platformEnemy(stage,2,t,10,2,65);assert.ok(b.y>=300&&b.y+b.h<=405);assert.ok(Number.isFinite(b.x));const x=driftEnemy(stage,185,t,1,175,590);assert.ok(x>=175&&x<=590)}assert.equal(driftEnemy(1,200,10,1,175,590),200);assert.notEqual(platformEnemy(1,2,1,10,2,65).y,platformEnemy(2,2,1,10,2,65).y)});

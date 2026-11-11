@@ -1,3 +1,4 @@
+import {platformEnemy} from './arcade-enemies.ts';
 import {worlds} from './arcade-worlds.ts';
 import type {ActionMode,Body} from './action-arcade';
 type Item=Body&{text?:string;done?:boolean};
@@ -30,7 +31,7 @@ export function renderPixelScene(g:CanvasRenderingContext2D,s:PixelScene){
   for(let i=0;i<12;i++){const x=i*280+80;if(s.world===2){for(let k=0;k<4;k++)box(x+k*6,390-k*12,18,15,world.accent)}if(s.world===3){for(let k=0;k<5;k++)box(x+k*8,360-k*10,80-k*16,10,world.accent)}if(s.world===4){box(x,395,90,10,'#eefaff');box(x+30,370,30,25,'#d4eaff')}if(s.world===5){box(x,300,50,105,world.ground);for(let k=0;k<3;k++)box(x+k*20,290,10,15,world.accent)}}
   panel(20,330,85,45,world.accent);label('START',62,357,16,'#202838');
   for(const item of s.coins)if(!item.done){const bob=Math.round(Math.sin(t*3+item.x)*2)*2;panel(item.x,item.y+bob,item.w,item.h,'#d9ad5d');box(item.x+6,item.y+8+bob,4,4,'#fff4be');if(s.world===3){box(item.x+7,item.y+10+bob,7,7,'#806023');box(item.x+12,item.y+14+bob,14,3,'#806023')}label(item.text||'',item.x+item.w/2,item.y+22+bob,20,'#203440','center',item.w-16)}
-  for(let i=0;i<(s.robots?.count||7);i++){const x=430+i*(s.robots?2600/Math.max(1,s.robots.count-1):370)+Math.sin(time*(s.robots?.speed||1.6)+i)*(s.robots?.range||55);drawSprite(g,robot,x,379,2);box(x+4,401,8,4,'#272840');box(x+20,401,8,4,'#272840')}
+  for(let i=0;i<(s.robots?.count||7);i++){const b=platformEnemy(s.world||1,i,time,s.robots?.count||7,s.robots?.speed||1.6,s.robots?.range||55);drawEnemy(b,'platform')}
   box(3195,275,4,130,world.accent);box(3199,275,40,25,world.accent);const exit=s.done>=6;panel(3118,319,70,86,exit?'#427b70':'#414858');box(3128,329,50,66,exit?'#a3dab7':'#26374c');for(let y=331;y<392;y+=8)box(3134,y,38,2,exit?'#d7edb260':'#637384');label(exit?'UIT':`6 ${(s.target||'de').toUpperCase()}`,3153,362,16);box(3120,312,66,8,exit?'#e8d47e':'#647980');
   g.restore();
  }else if(mode==='race'){
@@ -38,14 +39,14 @@ export function renderPixelScene(g:CanvasRenderingContext2D,s:PixelScene){
   box(142,0,516,460,'#b8a98a');box(160,0,480,460,'#35414c');for(let i=0;i<24;i++){const y=(i*24+time*150)%576-40;box(150,y,10,24,i%2?'#efddae':'#ba665e');box(640,y,10,24,i%2?'#efddae':'#ba665e')}
   for(let i=0;i<12;i++){const y=(i*65+time*180)%700-70;box(315,y,5,34,'#d7d2b6');box(475,y,5,34,'#d7d2b6');box(178+(i*71)%440,y+20,22,2,'#47515b')}
   for(let i=0;i<5;i++){const y=(i*170+time*90)%850-180;if(!s.world||s.world===1){drawSprite(g,tree,24,y,4);drawSprite(g,tree,707,y-90,4)}else{for(const x of [25,720]){box(x,y,55,90,world.accent);box(x+8,y+12,39,65,world.ground);if(s.world===4)box(x-5,y-5,65,10,'#ffffff');if(s.world===3)box(x+10,y-20,35,20,world.accent)}}panel(669,y+90,74,34,'#d1b66b');label(i%2?'STAD':'SCHOOL',706,y+111,12,'#233d42');box(704,y+124,5,24,'#bcb793')}
-  for(const car of s.traffic)drawCar(car.x,car.y,car.w,car.h,['#bd6d68','#a6b48e','#648cb8'][Math.floor(car.x)%3],false);
+  for(const car of s.traffic)drawEnemy(car,'race');
  }else{
   box(0,0,800,460,'#121b34');for(let i=0;i<7;i++){box(470+i*12,48+i*10,190-i*18,94,'#252647');box(90+i*8,270+i*9,130-i*10,50,'#1a2440')}
   // Stepped planet silhouette and rings, drawn in integer pixels.
   for(let y=-48;y<=48;y+=4){const w=Math.floor(Math.sqrt(48*48-y*y)/4)*4;box(670-w,98+y,w*2,4,y<0?'#77708f':'#4f547a')}
   box(592,109,156,4,'#ad8a9c');box(606,113,148,4,'#81778f');box(624,78,24,4,'#9c8b9f');
   for(let i=0;i<85;i++){const y=(i*43+t*(15+i%3*12))%460,x=(i*137)%800;box(x,y,i%6===0?4:2,2,i%4?'#8691b3':'#e1dac7');if(i%17===0){box(x+1,y-3,2,8,'#ada6c1')}}
-  for(const b of s.traffic){const x=b.x-3,y=b.y-3;box(x+8,y,22,6,'#535875');box(x+2,y+6,34,24,'#535875');box(x+8,y+30,22,6,'#3b425e');box(x+6,y+8,24,18,'#898098');box(x+10,y+10,8,6,'#b4a0ae');box(x+21,y+18,10,8,'#635b7c')}
+  for(const b of s.traffic)drawEnemy(b,'space');
  }
  if(s.world&&s.world>1){for(let i=0;i<20;i++){const x=(i*149)%800,y=(i*73+time*15)%460;if(s.world===4)box(x,y,4,4,'#ffffff');else if(s.world===2)box(x,y,3,9,world.accent);else if(s.world===5)box(x,y,5,2,world.accent)}label(world.name,400,25,16,world.accent)}
  for(const item of s.items)if(!item.done){panel(item.x,item.y,item.w,item.h,mode==='space'?'#3d486b':'#d5bd85');if(mode==='space'){box(item.x+6,item.y+15,4,10,'#a5e1da');box(item.x+item.w-10,item.y+15,4,10,'#a5e1da')}else{box(item.x,item.y-8,6,8,'#e9e2c7');box(item.x+item.w-6,item.y-8,6,8,'#e9e2c7')}label(item.text||'',item.x+item.w/2,item.y+28,mode==='space'?20:24,mode==='space'?'#e7f0d3':'#24394a','center',item.w-24)}
@@ -53,5 +54,20 @@ export function renderPixelScene(g:CanvasRenderingContext2D,s:PixelScene){
  const px=player.x-camera;if(s.invincible===0||Math.floor(time*12)%2===0){if(mode==='platform'){drawSprite(g,hero,px,player.y+7,2);if(s.moving&&!s.airborne){const f=Math.floor(time*12)%2;box(px+(f?6:20),player.y+36,12,5,'#15263d')}}else if(mode==='race')drawCar(px,player.y,32,48,'#e5ba62',true);else{drawSprite(g,ship,px,player.y+3,2);const flame=6+Math.floor(t*18)%3*4;box(px+12,player.y+31,10,flame,'#de775d');box(px+15,player.y+31,4,flame-2,'#ffe6a3')}}
  for(const p of s.sparks){g.globalAlpha=Math.max(0,p.life);box(p.x-camera,p.y,4,4,p.color)}g.globalAlpha=1;
  box(12,12,mode==='platform'?148:136,20,'#17263cbb');label(mode==='platform'?'WOORDENWERELD':mode==='race'?'TAALRALLY':'WOORDENKOSMOS',20,26,12,'#e5e6c7','left');
+ function drawEnemy(b:Body,kind:ActionMode){
+  const stage=s.world||1,colors=['#93b65d','#b99ee4','#df9b59','#a5e0ee','#e18a86'],color=colors[stage-1];
+  if(kind==='race'){drawCar(b.x,b.y,b.w,b.h,color,false);if(stage===1){box(b.x-3,b.y+b.h-18,10,16,'#192634');box(b.x+b.w-7,b.y+b.h-18,10,16,'#192634')}if(stage===2){box(b.x+5,b.y+8,b.w-10,b.h-20,'#58516c');box(b.x+10,b.y+18,b.w-20,12,'#cdb5ed')}if(stage===3){box(b.x+7,b.y+7,b.w-14,b.h-14,'#765642');box(b.x+10,b.y+12,b.w-20,4,'#f6d6aa')}if(stage===4)box(b.x-4,b.y+b.h-10,b.w+8,10,'#e9f9ff');if(stage===5){box(b.x+5,b.y+20,12,5,Math.floor(t*4)%2?'#9be4f5':'#f9aaaa');box(b.x+b.w-17,b.y+20,12,5,'#e7e9fe')}return}
+  // Each silhouette stays inside the shared collision rectangle.
+  const shapes=[
+   ['...XXXXX...','..XXXXXXX..','.XXXXXXXXX.','XXXXXXXXXXX','XX.XX.XX.XX','X...X.X...X'],
+   ['X.........X','XX..XXX..XX','XXXXXXXXXXX','.XXXXXXXXX.','..XXXXXXX..','....XXX....'],
+   ['X.........X','XX.......XX','.XX.XXX.XX.','..XXXXXXX..','.XXXXXXXXX.','X.X.....X.X'],
+   ['...XXXXX...','...XXXXX...','..XXXXXXX..','.XXXXXXXXX.','..XXXXXXX..','..XX...XX..'],
+   ['..XX...XX..','..XXXXXXX..','.XXXXXXXXX.','..XXXXXXX..','..XX.X.XX..','.XX.....XX.'],
+  ];const rows=shapes[stage-1],cw=b.w/11,ch=b.h/6;
+  rows.forEach((row,j)=>[...row].forEach((v,i)=>{if(v==='X')box(b.x+i*cw,b.y+j*ch,cw,ch,color)}));
+  box(b.x+b.w*.32,b.y+b.h*.27,4,4,'#152437');box(b.x+b.w*.62,b.y+b.h*.27,4,4,'#152437');
+  if(kind==='space'){box(b.x+b.w*.4,b.y+b.h*.65,b.w*.2,b.h*.25,world.accent)}
+ }
  function drawCar(x:number,y:number,w:number,h:number,color:string,own:boolean){box(x-3,y+8,w+6,13,'#192634');box(x-3,y+h-20,w+6,12,'#192634');box(x+4,y,w-8,h,'#1b293c');box(x,y+5,w,h-10,color);box(x+4,y+4,w-8,5,'#f5dfac');box(x+5,y+13,w-10,h*.25,'#263d51');box(x+7,y+15,5,h*.2,'#96bec0');box(x+4,y+h-19,w-8,9,'#3d5265');box(x+3,y+h-7,6,4,'#e77c64');box(x+w-9,y+h-7,6,4,'#e77c64');box(x+w/2-2,y+h*.48,4,h*.2,'#fff0c3');if(own){box(x+5,y+h,4,4,'#da9564');box(x+w-9,y+h,4,4,'#da9564')}}
 }
