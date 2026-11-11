@@ -20,7 +20,7 @@ export function ActionArcade({mode,level,stage,tone,onEnd,audio}:Props){
  useEffect(()=>{audio.setPlaying(!paused,mode,stage);return()=>audio.setPlaying(false,mode,stage)},[audio,paused,mode,stage]);
  useEffect(()=>{
   const c=canvas.current,ctx=c?.getContext('2d');if(!c||!ctx)return;
-  const deck:Prompt[]=worldDeck(level,stage,mode==='space'?'space':'race').map(p=>({...p,options:shuffled(p.options)}));
+  const deck:Prompt[]=shuffled(worldDeck(level,stage,mode==='space'?'space':'race')).map(p=>({...p,options:shuffled(p.options)}));
   const nouns=shuffled(worldNouns(level,stage));
   const target=stage===5?'het':rules.target;
   let player={x:mode==='platform'?(stage===4?3100:45):380,y:mode==='platform'?340:360,w:32,h:40},vy=0,grounded=false,jumpHeld=false,shot=0,time=0,camera=0,lives=5,score=0,done=0,round=0,invincible=0,ended=false,last=performance.now(),frame=0,spawn=1,wave=0,tip='',tipUntil=0;

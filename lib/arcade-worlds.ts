@@ -2,18 +2,19 @@ import {languageNouns,languageSpelling,type GameLanguageLevel} from './arcade-pr
 export const worlds=[
  {name:'Groene vallei',sky:'#90cdbd',ground:'#577958',accent:'#f6d880',mission:['Verzamel zes de-woorden.','Rijd door het juiste lidwoord.','Schiet het goed gespelde woord.']},
  {name:'Kristalgrotten',sky:'#25254b',ground:'#51436c',accent:'#bb98ef',mission:['Vang de woorden in de aangegeven volgorde.','Bezorg woorden: zet de letters in de goede volgorde.','Red woorden: raak het juiste woord met je schip. Niet schieten!']},
- {name:'Zandstad',sky:'#e5ba7f',ground:'#ad7047',accent:'#fff1b4',mission:['Zoek zes sleutels met het juiste lidwoord. Breng ze terug naar START.','Volg de route: kies de juiste spelling.','Ruim de fout op: schiet de verkeerd gespelde vorm.']},
+ {name:'Zandstad',sky:'#e5ba7f',ground:'#ad7047',accent:'#fff1b4',mission:['Zoek zes sleutels met het juiste lidwoord. Breng ze terug naar START.','Volg de route: vul de zin aan of kies de juiste spelling.','Ruim de fout op: schiet de verkeerd gespelde vorm.']},
  {name:'IJseilanden',sky:'#b6d9ef',ground:'#688dad',accent:'#f0ffff',mission:['Zoek de woorden van rechts naar links. Volg het doel bovenaan.','Pakketdienst: kies het woord bij het lidwoord.','Vang de signalen: maak een woord van de letters en raak het met je schip.']},
- {name:'Sterrenfort',sky:'#211e3f',ground:'#493955',accent:'#ffbf77',mission:['Verzamel zes het-woorden en verover de vlag bij de uitgang.','Finalerit: lidwoorden en spelling wisselen elkaar af.','Eindmissie: schiet afwisselend de goede en de foute spelling.']},
+ {name:'Sterrenfort',sky:'#211e3f',ground:'#493955',accent:'#ffbf77',mission:['Verzamel zes het-woorden en verover de vlag bij de uitgang.','Finalerit: zinnen en spelling wisselen elkaar af.','Eindmissie: schiet afwisselend de goede en de foute spelling.']},
 ] as const;
 export function worldDeck(level:GameLanguageLevel,stage:number,mode:'race'|'space'){
  const nouns=worldNouns(level,stage),spell=languageSpelling(level);const offset=(stage-1)*3;
- return Array.from({length:8},(_,i)=>{const n=nouns[(i+offset)%nouns.length],p=spell[(i+offset)%spell.length];
+ return Array.from({length:12},(_,i)=>{const n=nouns[(i+offset)%nouns.length],p=spell[(i+offset)%spell.length];
   const spelling=stage===2||stage===4?{word:`Zet de letters goed: ${[...n.word].reverse().join(' · ')}`,answer:n.word,options:[n.word,n.word+n.word.slice(-1),n.word.slice(0,-1)+'zz'],explanation:`${n.article} ${n.word}`}:{word:p.clue,answer:p.word,options:p.options,explanation:p.tip};
   if(mode==='space'){
    const wrong=stage===3||(stage===5&&i%2===1);
    return wrong?{word:`Welke spelling is fout? (${p.word})`,answer:p.options[1],options:[p.word,p.options[1]],explanation:p.tip}:spelling;
   }
+  if((stage===3||stage===5)&&i%2===0){const rows=['A1','A2'].includes(level)?easySentences:hardSentences;const [word,answer,a,b]=rows[(i/2+stage)%rows.length];return{word,answer,options:[answer,a,b],explanation:word.replace('…',answer)}}
   if(stage===2||stage===3||(stage===5&&i%2===1))return spelling;
   if(stage===4){const other=nouns.find(v=>v.article!==n.article)!;return{word:`Welk woord hoort bij ${n.article}?`,answer:n.word,options:[n.word,other.word],explanation:`${n.article} ${n.word}`}}
   return{word:n.word,answer:n.article,options:['de','het'],explanation:`${n.article} ${n.word}`};
@@ -34,3 +35,6 @@ const advancedWords=[
  [['zwaartekracht','dampkring','omwenteling','waarneming','planeet','ruimtereis'],['ruimtevaartuig','onderzoek','universum','hemellichaam','zonnestelsel','observatorium']],
 ];
 export function worldNouns(level:GameLanguageLevel,stage:number){return (['A1','A2'].includes(level)?worldWords:advancedWords)[stage-1].flatMap((words,i)=>words.map(word=>({word,article:i===0?'de' as const:'het' as const})))}
+
+const easySentences=[['Ik … water.','drink','drinkt','drinken'],['Wij … naar school.','gaan','gaat','ga'],['Zij heeft twee … .','boeken','boek','boekt'],['Gisteren … ik thuis.','was','ben','zijn'],['Morgen … ik werken.','ga','ging','gegaan'],['Het kind … buiten.','speelt','spelen','speel'],['Ik heb een … fiets.','nieuwe','nieuw','nieuws'],['Waar … jij?','woon','woont','wonen']];
+const hardSentences=[['Als ik meer tijd had, … ik vaker oefenen.','zou','zal','ben'],['Ik blijf thuis, … ik ben ziek.','want','omdat','hoewel'],['Hoewel het regent, … we naar buiten.','gaan','omdat','dat'],['Het verslag … gisteren ingeleverd.','werd','word','worden'],['De collega met … ik werk, is vriendelijk.','wie','wat','welk'],['Ik weet niet … de trein vertrekt.','wanneer','want','terwijl'],['Zodra hij klaar is, … hij naar huis.','gaat','gaan','gegaan'],['We zoeken iemand … Nederlands spreekt.','die','dat','wat']];
