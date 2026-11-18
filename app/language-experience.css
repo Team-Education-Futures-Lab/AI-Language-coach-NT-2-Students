@@ -22,19 +22,19 @@ html[dir=rtl] .message.user{align-self:flex-end}
 .tc-landing .language-switcher,.tc-auth .language-switcher{font-family:Arial,sans-serif;font-size:14px;letter-spacing:normal}
 .tc-landing .language-button,.tc-auth .language-button{color:#34382f;border-color:#d7d8d0;background:#fff9}
 .auth-header>.language-switcher{order:2;margin-inline-start:auto}.auth-back{order:3}.auth-header{flex-wrap:wrap}
-.language-welcome{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:25px 28px;background:linear-gradient(115deg,var(--card),var(--secondary));border:1px solid var(--border);border-radius:20px;margin:0 0 24px}
+.language-welcome{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:25px 28px;background:linear-gradient(115deg,var(--card),var(--secondary));border:1px solid var(--border);border-radius:8px;margin:0 0 24px}
 .language-welcome h2{font-size:26px;margin:8px 0}.language-welcome p{max-width:600px;line-height:1.7;color:var(--muted-foreground)}
 .language-welcome-actions{display:flex;flex-direction:column;align-items:flex-start;gap:14px;flex:none}
-.conversation-modes{display:flex;align-items:center;gap:5px;padding:5px;border:1px solid var(--border);border-radius:13px;background:var(--background);margin-bottom:12px}
-.conversation-modes button{border:0!important;border-radius:9px!important;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px!important;font-size:13px!important}
+.conversation-modes{display:flex;align-items:center;gap:5px;padding:5px;border:1px solid var(--border);border-radius:8px;background:var(--background);margin-bottom:12px}
+.conversation-modes button{border:0!important;border-radius:8px!important;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px!important;font-size:13px!important}
 .conversation-modes button[aria-pressed=true]{background:var(--primary)!important;color:var(--primary-foreground);box-shadow:0 3px 9px #0001}
 .conversation-modes>span{margin-inline-start:auto;font-size:11px;color:var(--muted-foreground);text-align:end}
-.voice-call-card{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:18px;border-radius:18px;background:linear-gradient(125deg,var(--secondary),var(--card));border:1px solid var(--border);margin:8px 0 14px}
+.voice-call-card{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:18px;border-radius:8px;background:linear-gradient(125deg,var(--secondary),var(--card));border:1px solid var(--border);margin:8px 0 14px}
 .voice-call-orbit{border-radius:50%;width:68px;height:68px;display:grid;place-items:center;background:var(--card);box-shadow:0 0 0 6px color-mix(in srgb,var(--primary) 8%,transparent)}
 .voice-call-copy{flex:1;min-width:130px}.voice-call-copy b{display:block;font-size:15px}.voice-call-copy small{display:block;margin-top:3px}
-.voice-connect,.voice-hangup{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0!important;background:var(--primary)!important;color:var(--primary-foreground);padding:11px 14px!important;border-radius:12px!important}
+.voice-connect,.voice-hangup{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0!important;background:var(--primary)!important;color:var(--primary-foreground);padding:11px 14px!important;border-radius:8px!important}
 .voice-hangup{background:#b83d36!important;color:white;width:44px;height:44px;border-radius:50%!important;padding:0!important}
-.voice-wave{height:16px;display:flex;align-items:center;gap:3px;margin-top:8px;direction:ltr}.voice-wave i{display:block;width:3px;height:4px;background:var(--primary);border-radius:9px}
+.voice-wave{height:16px;display:flex;align-items:center;gap:3px;margin-top:8px;direction:ltr}.voice-wave i{display:block;width:3px;height:4px;background:var(--primary);border-radius:8px}
 [data-phase=listening] .voice-wave i,[data-phase=speaking] .voice-wave i{animation:voice-pulse 1s ease-in-out infinite}
 @keyframes voice-pulse{50%{height:16px;opacity:.6}}
 .voice-actions{flex-wrap:wrap;gap:7px}.voice-actions button{font-size:12px!important;padding:8px 10px!important}.voice-controls small{font-size:11px;line-height:1.6}.voice-controls p{font-size:13px;line-height:1.6}.voice-settings select{width:100%;max-width:100%}
@@ -50,7 +50,7 @@ html[dir=rtl] .message.user{align-self:flex-end}
 .coach-dialog{display:flex!important;flex-direction:column;height:min(860px,94svh);max-height:94svh!important;gap:9px!important;overflow:hidden!important}
 .coach-dialog>*{flex-shrink:0}.coach-dialog .chat-messages{flex:1 1 200px;height:auto;min-height:90px;overflow:auto;overscroll-behavior:contain;padding:8px 2px}
 .coach-dialog>.muted,.coach-dialog>.pip-local-status{display:none}.coach-dialog .new-conversation{padding:5px 10px;font-size:12px;min-height:30px}
-.coach-language-note{font-size:12px;line-height:1.5;padding:8px 12px;border-radius:10px;background:var(--secondary);color:var(--foreground)}
+.coach-language-note{font-size:12px;line-height:1.5;padding:8px 12px;border-radius:8px;background:var(--secondary);color:var(--foreground)}
 .coach-goals{font-size:12px;max-height:100px;overflow:auto}.coach-goals summary{cursor:pointer;color:var(--muted-foreground)}
 .coach-dialog .voice-controls{max-height:33svh;overflow:auto;padding-top:9px;margin-top:0}.coach-dialog .voice-actions{margin-bottom:5px}.coach-dialog .chat-bottom{margin:0;padding-top:0;font-size:11px;gap:4px}
 .coach-dialog .voice-call-card{padding:10px 14px;margin:5px 0 7px}.coach-dialog .conversation-modes{margin-bottom:7px}.coach-dialog .voice-call-orbit{height:48px;width:48px}
@@ -63,7 +63,7 @@ html[dir=rtl] .message.user{align-self:flex-end}
 @media(max-width:650px){.coach-dialog .chat-bottom>span{display:none}.coach-dialog .chat-bottom{align-items:flex-end}}
 
 /* Shared voice readiness: small status, details only when requested. */
-.voice-preload{margin:0 0 1rem;padding:.7rem .9rem;border:1px solid var(--border);border-radius:14px;background:var(--card);font-size:.85rem;line-height:1.5}
+.voice-preload{margin:0 0 1rem;padding:.7rem .9rem;border:1px solid var(--border);border-radius:8px;background:var(--card);font-size:.85rem;line-height:1.5}
 .voice-preload summary{display:flex;align-items:center;gap:.6rem;cursor:pointer;list-style:none;overflow-wrap:anywhere}
 .voice-preload summary::-webkit-details-marker{display:none}
 .voice-preload summary::after{content:'+';margin-inline-start:auto;padding-inline-start:.5rem}
@@ -80,11 +80,11 @@ html[dir=rtl] .message.user{align-self:flex-end}
 .voice-preload-count{display:block;font-variant-numeric:tabular-nums;opacity:.75}
 .coach-support-picker{position:relative;margin:.5rem 0;font-size:.85rem;min-width:0}
 .coach-support-picker>.outline-button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
-.coach-support-options{padding:.8rem;border:1px solid var(--border);border-radius:14px;background:var(--card);display:grid;gap:.7rem}
+.coach-support-options{padding:.8rem;border:1px solid var(--border);border-radius:8px;background:var(--card);display:grid;gap:.7rem}
 .coach-support-options label{display:grid;gap:.4rem}.coach-support-options input{width:100%;min-width:0;padding:.5rem;border:1px solid var(--border);border-radius:8px}
 .coach-support-list{max-height:180px;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.3rem}
 .coach-support-list button{padding:.45rem;text-align:start;border-radius:7px;overflow-wrap:anywhere}.coach-support-list button[aria-pressed=true]{background:var(--primary);color:var(--primary-foreground)}
 .pip-help-panel>.coach-support-picker{padding:0 .9rem}
 .voice-read-toggle[aria-pressed=true]{background:var(--primary);color:var(--primary-foreground)}
-.voice-mic-feedback{display:grid;gap:.45rem;padding:.65rem;border:1px solid var(--border);border-radius:12px}.voice-mic-feedback>div{display:flex;align-items:center;gap:.4rem}
+.voice-mic-feedback{display:grid;gap:.45rem;padding:.65rem;border:1px solid var(--border);border-radius:8px}.voice-mic-feedback>div{display:flex;align-items:center;gap:.4rem}
 .voice-mic-feedback meter{width:100%;height:12px}.voice-mic-feedback button{justify-self:start}.voice-settings>small{grid-column:1 / -1}

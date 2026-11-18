@@ -258,12 +258,16 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, isMobile, openMobile, open } = useSidebar()
+  const expanded = isMobile ? openMobile : open
 
   return (
     <Button
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
+      aria-expanded={expanded}
+      aria-label={expanded ? "Menu inklappen" : "Menu uitklappen"}
+      title={expanded ? "Menu inklappen" : "Menu uitklappen"}
       variant="ghost"
       size="icon"
       className={cn("size-7", className)}
@@ -274,7 +278,7 @@ function SidebarTrigger({
       {...props}
     >
       <PanelLeftIcon />
-      <span className="sr-only">Toggle Sidebar</span>
+      <span className="sr-only">{expanded ? "Menu inklappen" : "Menu uitklappen"}</span>
     </Button>
   )
 }
