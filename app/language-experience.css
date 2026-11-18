@@ -3,11 +3,7 @@
 button .ui-copy,a .ui-copy{white-space:normal;line-height:inherit}
 :where(button,a,input,textarea,select){min-width:0}
 [lang=nl][dir=ltr]{unicode-bidi:isolate}
-html[dir=rtl] :is(h1,h2,h3,.eyebrow,.landing-kicker){letter-spacing:0!important}
-html[dir=rtl] .app-shell{direction:ltr}
-html[dir=rtl] :is(.workspace,[data-slot=sidebar-content],[data-slot=sidebar-footer],.pip-help-panel,.coach-dialog){direction:rtl;text-align:start}
-html[dir=rtl] .message.assistant{align-self:flex-start}
-html[dir=rtl] .message.user{align-self:flex-end}
+html[data-text-direction=rtl] :is(h1,h2,h3,.eyebrow,.landing-kicker){letter-spacing:0!important}
 :is(.message,.pip-help-message) p{white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext}
 :is(.mission-card,.game-card,.nav-button,.primary-button,.outline-button,.auth-submit){height:auto;min-width:0;white-space:normal}
 :is(.page-heading,.section-heading,.top-actions,.auth-header,.landing-nav-actions){gap:12px;min-width:0}

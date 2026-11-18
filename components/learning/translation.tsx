@@ -32,7 +32,7 @@ export function TranslationProvider({children}:{children:ReactNode}){
  },[reset]);
  const retry=useCallback(()=>{reset()},[reset]);
  useEffect(()=>{try{const l=localStorage.getItem('taalcoach-language');if(l)choose(l)}catch{}return()=>{generation.current++;abort.current?.abort();if(timer.current)clearTimeout(timer.current)}},[choose]);
- useEffect(()=>{document.documentElement.lang=/^[a-z]{2,3}(-[A-Za-z]+)?$/.test(language)?language:'und';document.documentElement.dir=languageDirection(language)},[language]);
+ useEffect(()=>{document.documentElement.lang=/^[a-z]{2,3}(-[A-Za-z]+)?$/.test(language)?language:'und';document.documentElement.dir='ltr';document.documentElement.dataset.textDirection=languageDirection(language)},[language]);
  return <TranslationContext.Provider value={{language,cache,queue,error,choose,retry,translating,revision}}>{children}</TranslationContext.Provider>
 }
 export function T({text}:{text:string}){const {language,cache,queue,revision}=useContext(TranslationContext);const normalized=text.trim(),translated=interfaceTranslation(normalized,language)||cache[normalized]||cache[text];useEffect(()=>{if(language!=='nl')queue(normalized)},[normalized,language,queue,revision]);if(language==='nl')return <>{text}</>;return <>{/^\s/.test(text)?' ':''}<bdi className="ui-copy" lang={translated?language:'nl'} dir="auto">{translated||normalized}</bdi>{/\s$/.test(text)?' ':''}</>}
