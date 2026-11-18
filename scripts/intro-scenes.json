@@ -1,0 +1,8 @@
+[
+ {"title":"Welkom bij AI Taalcoach","body":"Je leert Nederlands. Stap voor stap. Kies bovenaan eerst de taal van de app.","nav":"Start","action":"Kies jouw taal","en":"Welcome! Learn Dutch step by step. First choose your app language at the top."},
+ {"title":"Begin met één oefening","body":"Klik op Oefenen. Kies een opdracht. Lees de vraag en probeer zelf een antwoord.","nav":"Oefenen","action":"Start oefening","en":"Select Practice. Choose an exercise. Read the question and try answering yourself."},
+ {"title":"Kom je er niet uit?","body":"Klik op Hulp nodig. Vertel wat je moeilijk vindt. De coach geeft je een hint.","nav":"Oefenen","action":"Hulp nodig?","en":"Select Need help? Explain what is difficult. Your coach will give you a hint."},
+ {"title":"Praat met je coach","body":"Open AI Coach. Je kunt typen of praten. Fouten maken mag. Zo leer je.","nav":"AI Coach","action":"Typen of praten","en":"Open AI Coach. You can type or speak. Making mistakes is part of learning."},
+ {"title":"Oefen met nieuws","body":"Open Lezen en nieuws. Zoek een onderwerp. Kies Oefen dit nieuws met AI.","nav":"Lezen en nieuws","action":"Oefen dit nieuws met AI","en":"Open Reading and news. Search for a topic. Choose Practise this news with AI."},
+ {"title":"Je bent klaar om te starten","body":"Bij Mijn voortgang zie je wat je hebt gedaan. Begin nu met één kleine oefening.","nav":"Mijn voortgang","action":"Op jouw tempo","en":"My progress shows what you have completed. Start with one small exercise."}
+]
