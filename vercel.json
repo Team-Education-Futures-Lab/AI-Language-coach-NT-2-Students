@@ -1,7 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "npm ci --include=optional --no-audit --no-fund",
+  "installCommand": "ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci --include=optional --no-audit --no-fund",
   "buildCommand": "npm run build",
-  "regions": ["fra1"]
+  "regions": [
+    "fra1"
+  ]
 }
